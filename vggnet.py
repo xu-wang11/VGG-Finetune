@@ -20,7 +20,7 @@ class VGGNet:
 
     def build(self):
         start_time = time.time()
-        train_dataset, val_dataset, num_train, num_val = self.load_imageNet()
+        train_dataset, val_dataset, num_train, num_val = self.load_dataset()
         iter = tf.data.Iterator.from_structure(train_dataset.output_types, train_dataset.output_shapes)
 
         X, Y = iter.get_next()
@@ -62,10 +62,10 @@ class VGGNet:
 
         self.loss = tf.losses.sparse_softmax_cross_entropy(labels=Y, logits=self.logits)
 
-        self.trainer = tf.train.GradientDescentOptimizer(learning_rate=0.0001).minimize(self.loss, var_list=[tf.get_variable('fc8')])
+        # self.trainer = tf.train.GradientDescentOptimizer(learning_rate=0.0001).minimize(self.loss, var_list=[tf.get_variable('fc8')])
 
         accuracy_sum = tf.reduce_sum(
-        tf.cast(tf.nn.in_top_k(predictions=tf.argmax(self.logits, axis=1), targets=Y, k=5),
+        tf.cast(tf.nn.in_top_k(predictions=tf.to_float(tf.argmax(self.logits)), targets=Y, k=5),
                 dtype=tf.int32))
         print(("build model finished: %ds" % (time.time() - start_time)))
 
@@ -140,7 +140,7 @@ class VGGNet:
         image_cropped = tf.image.resize_image_with_crop_or_pad(image_resized, 224, 224)
         image_bgr = tf.reverse(image_cropped, axis=[-1])
         image_nml = image_bgr - averageImg_BGR_imageNet
-        label = tf.one_hot(indices=label, depth=1000)
+        # label = tf.one_hot(indices=label, depth=1000)
         return image_nml, label
 
     @staticmethod
@@ -164,12 +164,13 @@ class VGGNet:
         image_bgr = tf.reverse(image_resized, axis=[-1])
         image_nml = image_bgr - averageImg_BGR_imageNet
         image_cropped = tf.image.random_flip_left_right(tf.random_crop(image_nml, [224, 224, 3]))
-        label = tf.one_hot(indices=label, depth=1000)
+        # label = tf.one_hot(indices=label, depth=1000)
         return image_cropped, label
 
     # load dataset
-    def load_dataset(self, img_dir):
+    def load_dataset(self):
         # % load data
+        img_dir = self.imgs_path
         file_paths = np.array([os.path.join(img_dir,  x) for x in sorted(os.listdir(img_dir))])
         labels = np.array(pd.read_csv('ILSVRC_labels.txt', delim_whitespace=True, header=None).values[:, 1], dtype=np.int32)
 
