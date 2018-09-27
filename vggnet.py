@@ -299,12 +299,7 @@ class VGGNet:
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             for epoch in range(n_epochs):
-<<<<<<< HEAD
-                print(epoch)
-                # step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
-=======
                 step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
->>>>>>> a84b811148d8caff11f7c111eb7221958f22aa6a
                 self.eval_once(sess, self.test_init, writer, epoch, step)
         writer.close()
 
