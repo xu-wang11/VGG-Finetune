@@ -17,7 +17,7 @@ class VGGNet:
         self.imgs_path = imgs_path
         self.weight_dict, self.bias_dict = pickle.load(open(model_path, 'rb'))
         print("loading weight matrix")
-        self.skip_step = 20
+        self.skip_step = 2
         self.gstep = tf.Variable(0, dtype=tf.int32,
                                  trainable=False, name='global_step')
         self.lr = 0.0001
@@ -291,12 +291,13 @@ class VGGNet:
             sess.run(tf.global_variables_initializer())
             step = self.gstep.eval()
             for epoch in range(n_epochs):
+                print(epoch)
                 # step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
                 self.eval_once(sess, self.test_init, writer, epoch, step)
         writer.close()
 
 
 if __name__ == '__main__':
-    vgg = VGGNet()
+    vgg = VGGNet(imgs_path='/srv/node/sdc1/image_data/img_val')
     vgg.build()
     vgg.train(n_epochs=100)
