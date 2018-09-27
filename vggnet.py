@@ -157,6 +157,7 @@ class VGGNet:
         # % load data
         img_dir = self.imgs_path
         file_paths = np.array([os.path.join(img_dir,  x) for x in sorted(os.listdir(img_dir))])
+
         labels = np.array(pd.read_csv('ILSVRC_labels.txt', delim_whitespace=True, header=None).values[:, 1], dtype=np.int32)
 
         train_index = np.ones(labels.shape, dtype=np.bool)
@@ -175,7 +176,7 @@ class VGGNet:
 
         file_paths_val = file_paths[val_index]
         labels_val = labels[val_index]
-        np_exp_val = len(labels_val)
+        self.n_test = len(labels_val)
 
         file_paths_train = tf.constant(file_paths_train)
         labels_train = tf.constant(labels_train)
@@ -299,4 +300,4 @@ class VGGNet:
 if __name__ == '__main__':
     vgg = VGGNet()
     vgg.build()
-    vgg.train(n_epochs=100)
+    vgg.train(n_epochs=1)
