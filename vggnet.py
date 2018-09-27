@@ -224,7 +224,10 @@ class VGGNet:
         with tf.name_scope('predict'):
             preds = tf.nn.softmax(self.logits)
             correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(self.Y, 1))
-            self.accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
+            # self.accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
+            self.accuracy = tf.reduce_sum(
+                tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(self.Y, axis=1), k=5),
+                        dtype=tf.int32))
 
     def summary(self):
         '''
