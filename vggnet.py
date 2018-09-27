@@ -10,23 +10,23 @@ import pandas as pd
 
 
 class VGGNet:
-    def __init__(self, model_path='Weights_imageNet', imgs_path=''):
+    def __init__(self, model_path='Weights_imageNet', imgs_path='ILSVRC2012_img_val'):
         self.batch_size = 32
         self.cpu_cores = 8
         self.model_path = model_path
         self.imgs_path = imgs_path
         self.weight_dict, self.bias_dict = pickle.load(open(model_path, 'rb'))
         print("loading weight matrix")
+        self.skip_step = 20
+        self.gstep = tf.Variable(0, dtype=tf.int32,
+                                 trainable=False, name='global_step')
+        self.lr = 0.0001
 
-    def build(self):
+    def inference(self):
         start_time = time.time()
-        train_dataset, val_dataset, num_train, num_val = self.load_dataset()
-        iter = tf.data.Iterator.from_structure(train_dataset.output_types, train_dataset.output_shapes)
-
-        X, Y = iter.get_next()
 
         # model definition
-        self.conv1_1 = self.conv_layer(X, "conv1_1")
+        self.conv1_1 = self.conv_layer(self.X, "conv1_1")
         self.conv1_2 = self.conv_layer(self.conv1_1, "conv1_2")
         self.pool1 = self.max_pool(self.conv1_2, 'pool1')
 
@@ -56,24 +56,9 @@ class VGGNet:
         self.fc7 = self.fc_layer(self.relu6, "fc7")
         self.relu7 = tf.nn.relu(self.fc7)
 
-        self.fc8 = self.fc_layer(self.relu7, "fc8")
+        self.logits = self.fc_layer(self.relu7, "fc8")
 
-        self.logits = tf.nn.softmax(self.fc8, name="prob")
-
-        self.loss = tf.losses.sparse_softmax_cross_entropy(labels=Y, logits=self.logits)
-
-        # self.trainer = tf.train.GradientDescentOptimizer(learning_rate=0.0001).minimize(self.loss, var_list=[tf.get_variable('fc8')])
-
-        accuracy_sum = tf.reduce_sum(
-        tf.cast(tf.nn.in_top_k(predictions=tf.to_float(tf.argmax(self.logits)), targets=Y, k=5),
-                dtype=tf.int32))
-        print(("build model finished: %ds" % (time.time() - start_time)))
-
-        with tf.Session() as sess:
-            sess.run(iter.make_iterator(val_dataset))
-            for i in range(1, 100):
-                accu_sum = sess.run(accuracy_sum)
-                print(accu_sum)
+        # self.logits = tf.nn.softmax(self.fc8, name="prob")
 
     def avg_pool(self, bottom, name):
         return tf.nn.avg_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
@@ -140,7 +125,7 @@ class VGGNet:
         image_cropped = tf.image.resize_image_with_crop_or_pad(image_resized, 224, 224)
         image_bgr = tf.reverse(image_cropped, axis=[-1])
         image_nml = image_bgr - averageImg_BGR_imageNet
-        # label = tf.one_hot(indices=label, depth=1000)
+        label = tf.one_hot(indices=label, depth=1000)
         return image_nml, label
 
     @staticmethod
@@ -164,7 +149,7 @@ class VGGNet:
         image_bgr = tf.reverse(image_resized, axis=[-1])
         image_nml = image_bgr - averageImg_BGR_imageNet
         image_cropped = tf.image.random_flip_left_right(tf.random_crop(image_nml, [224, 224, 3]))
-        # label = tf.one_hot(indices=label, depth=1000)
+        label = tf.one_hot(indices=label, depth=1000)
         return image_cropped, label
 
     # load dataset
@@ -212,9 +197,106 @@ class VGGNet:
         dataset_val = dataset_val.batch(self.batch_size)
         dataset_val = dataset_val.prefetch(buffer_size=1)
 
-        return dataset_train, dataset_val, nb_exp_train, np_exp_val
+        iter = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
+        self.X, self.Y = iter.get_next()
+
+        self.train_init = iter.make_initializer(dataset_train)  # initializer for train_data
+        self.test_init = iter.make_initializer(dataset_val)
+        # return dataset_train, dataset_val, nb_exp_train, np_exp_val
+
+    def loss(self):
+        entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.Y, logits=self.logits)
+        self.loss = tf.reduce_mean(entropy, name='loss')
+
+    def optimize(self):
+        '''
+        Define training op
+        using Adam Gradient Descent to minimize cost
+        '''
+        self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss,
+                                                global_step=self.gstep)
+
+    def eval(self):
+        '''
+        Count the number of right predictions in a batch
+        '''
+        with tf.name_scope('predict'):
+            preds = tf.nn.softmax(self.logits)
+            correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(self.Y, 1))
+            self.accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
+
+    def summary(self):
+        '''
+        Create summaries to write on TensorBoard
+        '''
+        with tf.name_scope('summaries'):
+            tf.summary.scalar('loss', self.loss)
+            tf.summary.scalar('accuracy', self.accuracy)
+            tf.summary.histogram('histogram loss', self.loss)
+            self.summary_op = tf.summary.merge_all()
+
+    def build(self):
+        '''
+        Build the computation graph
+        '''
+        self.load_dataset()
+        self.inference()
+        self.loss()
+        # self.optimize()
+        self.eval()
+        self.summary()
+
+    def train_one_epoch(self, sess, init, writer, epoch, step):
+        start_time = time.time()
+        sess.run(init)
+        total_loss = 0
+        n_batches = 0
+        try:
+            while True:
+                _, l, summaries = sess.run([self.opt, self.loss, self.summary_op])
+                writer.add_summary(summaries, global_step=step)
+                if (step + 1) % self.skip_step == 0:
+                    print('Loss at step {0}: {1}'.format(step, l))
+                step += 1
+                total_loss += l
+                n_batches += 1
+        except tf.errors.OutOfRangeError:
+            pass
+        print('Average loss at epoch {0}: {1}'.format(epoch, total_loss / n_batches))
+        print('Took: {0} seconds'.format(time.time() - start_time))
+        return step
+
+    def eval_once(self, sess, init, writer, epoch, step):
+        start_time = time.time()
+        sess.run(init)
+        total_correct_preds = 0
+        try:
+            while True:
+                accuracy_batch, summaries = sess.run([self.accuracy, self.summary_op])
+                writer.add_summary(summaries, global_step=step)
+                total_correct_preds += accuracy_batch
+        except tf.errors.OutOfRangeError:
+            pass
+
+        print('Accuracy at epoch {0}: {1} '.format(epoch, total_correct_preds / self.n_test))
+        print('Took: {0} seconds'.format(time.time() - start_time))
+
+    def train(self, n_epochs):
+        '''
+        The train function alternates between training one epoch and evaluating
+        '''
+        writer = tf.summary.FileWriter('graphs/convnet', tf.get_default_graph())
+
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            step = self.gstep.eval()
+            for epoch in range(n_epochs):
+                # step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
+                self.eval_once(sess, self.test_init, writer, epoch, step)
+        writer.close()
 
 
 if __name__ == '__main__':
-    vgg = VGGNet(imgs_path='/srv/node/sdc1/image_data/img_val')
+    vgg = VGGNet()
     vgg.build()
+    vgg.train(n_epochs=100)
