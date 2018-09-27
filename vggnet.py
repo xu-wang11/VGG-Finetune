@@ -101,12 +101,12 @@ class VGGNet:
 
     def get_bias(self, name):
         if name.startswith('fc'):
-            return tf.get_variable(name='biases', shape=self.bias_dict[name].shape)
+            return tf.get_variable(name='biases', shape=self.bias_dict[name].shape, initializer=self.bias_dict[name])
         else:
             return tf.constant(self.bias_dict[name], name="biases")
 
     def get_fc_weight(self, name):
-        return tf.get_variable(name="weights", shape=self.weight_dict[name].shape)
+        return tf.get_variable(name="weights", shape=self.weight_dict[name].shape, initializer=self.weight_dict[name])
         # return tf.constant(self.weight_dict[name], name="weights")
 
     @staticmethod
@@ -298,6 +298,7 @@ class VGGNet:
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
+            step = self.gstep.eval()
             for epoch in range(n_epochs):
                 step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
                 self.eval_once(sess, self.test_init, writer, epoch, step)
