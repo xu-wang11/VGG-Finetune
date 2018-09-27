@@ -96,13 +96,18 @@ class VGGNet:
             return fc
 
     def get_conv_filter(self, name):
+
         return tf.constant(self.weight_dict[name], name="filter")
 
     def get_bias(self, name):
-        return tf.constant(self.bias_dict[name], name="biases")
+        if name.startswith('fc'):
+            return tf.get_variable(name='biases', shape=self.bias_dict[name].shape)
+        else:
+            return tf.constant(self.bias_dict[name], name="biases")
 
     def get_fc_weight(self, name):
-        return tf.constant(self.weight_dict[name], name="weights")
+        return tf.get_variable(name="weights", shape=self.weight_dict[name].shape)
+        # return tf.constant(self.weight_dict[name], name="weights")
 
     @staticmethod
     def parse_image(filename, label):
@@ -246,7 +251,7 @@ class VGGNet:
         self.load_dataset()
         self.inference()
         self.loss()
-        # self.optimize()
+        self.optimize()
         self.eval()
         self.summary()
 
@@ -293,12 +298,25 @@ class VGGNet:
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            step = self.gstep.eval()
             for epoch in range(n_epochs):
+<<<<<<< HEAD
                 print(epoch)
                 # step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
+=======
+                step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
+>>>>>>> a84b811148d8caff11f7c111eb7221958f22aa6a
                 self.eval_once(sess, self.test_init, writer, epoch, step)
         writer.close()
+
+    def test(self):
+        with tf.Session() as sess:
+            start_time = time.time()
+            sess.run(tf.global_variables_initializer())
+            accuracy_batch, summaries = sess.run([self.accuracy, self.summary_op])
+            total_correct_preds = 0
+            total_correct_preds += accuracy_batch
+            print('Accuracy: {1} '.format(total_correct_preds / self.n_test))
+            print('Took: {0} seconds'.format(time.time() - start_time))
 
 
 if __name__ == '__main__':
