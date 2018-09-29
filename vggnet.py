@@ -219,8 +219,9 @@ class VGGNet:
         Define training op
         using Adam Gradient Descent to minimize cost
         '''
-        self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss,
-                                                global_step=self.gstep)
+        # self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss,
+        #                                       global_step=self.gstep)
+        self.opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.loss, global_step=self.gstep)
 
     def eval(self):
         '''
@@ -304,15 +305,6 @@ class VGGNet:
                 self.eval_once(sess, self.test_init, writer, epoch, step)
         writer.close()
 
-    def test(self):
-        with tf.Session() as sess:
-            start_time = time.time()
-            sess.run(tf.global_variables_initializer())
-            accuracy_batch, summaries = sess.run([self.accuracy, self.summary_op])
-            total_correct_preds = 0
-            total_correct_preds += accuracy_batch
-            print('Accuracy: {1} '.format(total_correct_preds / self.n_test))
-            print('Took: {0} seconds'.format(time.time() - start_time))
 
 
 if __name__ == '__main__':
