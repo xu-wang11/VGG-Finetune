@@ -11,13 +11,13 @@ import pandas as pd
 
 class VGGNet:
     def __init__(self, model_path='Weights_imageNet', imgs_path='ILSVRC2012_img_val'):
-        self.batch_size = 32
+        self.batch_size = 64
         self.cpu_cores = 8
         self.model_path = model_path
         self.imgs_path = imgs_path
         self.weight_dict, self.bias_dict = pickle.load(open(model_path, 'rb'))
         print("loading weight matrix")
-        self.skip_step = 2
+        self.skip_step = 100
         self.gstep = tf.Variable(0, dtype=tf.int32,
                                  trainable=False, name='global_step')
         self.lr = 0.0001
@@ -101,12 +101,12 @@ class VGGNet:
 
     def get_bias(self, name):
         if name.startswith('fc'):
-            return tf.get_variable(name='biases', shape=self.bias_dict[name].shape, initializer=self.bias_dict[name])
+            return tf.get_variable(name='biases', initializer=self.bias_dict[name])
         else:
             return tf.constant(self.bias_dict[name], name="biases")
 
     def get_fc_weight(self, name):
-        return tf.get_variable(name="weights", shape=self.weight_dict[name].shape, initializer=self.weight_dict[name])
+        return tf.get_variable(name="weights", initializer=self.weight_dict[name])
         # return tf.constant(self.weight_dict[name], name="weights")
 
     @staticmethod
@@ -211,7 +211,7 @@ class VGGNet:
         # return dataset_train, dataset_val, nb_exp_train, np_exp_val
 
     def loss(self):
-        entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.Y, logits=self.logits)
+        entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.Y, logits=self.logits)
         self.loss = tf.reduce_mean(entropy, name='loss')
 
     def optimize(self):
@@ -319,3 +319,4 @@ if __name__ == '__main__':
     vgg = VGGNet(imgs_path='/srv/node/sdc1/image_data/img_val')
     vgg.build()
     vgg.train(n_epochs=1)
+
