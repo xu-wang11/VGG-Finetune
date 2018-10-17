@@ -10,11 +10,10 @@ import pandas as pd
 
 
 class VGGNet:
-    def __init__(self, model_path='Weights_imageNet', imgs_path='ILSVRC2012_img_val'):
+    def __init__(self, model_path='Weights_imageNet'):
         self.batch_size = 64
         self.cpu_cores = 8
         self.model_path = model_path
-        self.imgs_path = imgs_path
         self.weight_dict, self.bias_dict = pickle.load(open(model_path, 'rb'))
         print("loading weight matrix")
         self.skip_step = 100
@@ -22,43 +21,51 @@ class VGGNet:
                                  trainable=False, name='global_step')
         self.lr = 0.0001
 
-    def inference(self):
-        start_time = time.time()
+        self.op_opt = None
+        self.op_loss = None
+        self.op_summary = None
 
+    def inference(self, x):
+        output = self.construct_conv_layers(x)
+        self.construct_fc_layers(output)
+
+    def construct_conv_layers(self, input):
         # model definition
-        self.conv1_1 = self.conv_layer(self.X, "conv1_1")
-        self.conv1_2 = self.conv_layer(self.conv1_1, "conv1_2")
-        self.pool1 = self.max_pool(self.conv1_2, 'pool1')
+        conv1_1 = self.conv_layer(input, "conv1_1")
+        conv1_2 = self.conv_layer(conv1_1, "conv1_2")
+        pool1 = self.max_pool(conv1_2, 'pool1')
 
-        self.conv2_1 = self.conv_layer(self.pool1, "conv2_1")
-        self.conv2_2 = self.conv_layer(self.conv2_1, "conv2_2")
-        self.pool2 = self.max_pool(self.conv2_2, 'pool2')
+        conv2_1 = self.conv_layer(pool1, "conv2_1")
+        conv2_2 = self.conv_layer(conv2_1, "conv2_2")
+        pool2 = self.max_pool(conv2_2, 'pool2')
 
-        self.conv3_1 = self.conv_layer(self.pool2, "conv3_1")
-        self.conv3_2 = self.conv_layer(self.conv3_1, "conv3_2")
-        self.conv3_3 = self.conv_layer(self.conv3_2, "conv3_3")
-        self.pool3 = self.max_pool(self.conv3_3, 'pool3')
+        conv3_1 = self.conv_layer(pool2, "conv3_1")
+        conv3_2 = self.conv_layer(conv3_1, "conv3_2")
+        conv3_3 = self.conv_layer(conv3_2, "conv3_3")
+        pool3 = self.max_pool(conv3_3, 'pool3')
 
-        self.conv4_1 = self.conv_layer(self.pool3, "conv4_1")
-        self.conv4_2 = self.conv_layer(self.conv4_1, "conv4_2")
-        self.conv4_3 = self.conv_layer(self.conv4_2, "conv4_3")
-        self.pool4 = self.max_pool(self.conv4_3, 'pool4')
+        conv4_1 = self.conv_layer(pool3, "conv4_1")
+        conv4_2 = self.conv_layer(conv4_1, "conv4_2")
+        conv4_3 = self.conv_layer(conv4_2, "conv4_3")
+        pool4 = self.max_pool(conv4_3, 'pool4')
 
-        self.conv5_1 = self.conv_layer(self.pool4, "conv5_1")
-        self.conv5_2 = self.conv_layer(self.conv5_1, "conv5_2")
-        self.conv5_3 = self.conv_layer(self.conv5_2, "conv5_3")
-        self.pool5 = self.max_pool(self.conv5_3, 'pool5')
+        conv5_1 = self.conv_layer(pool4, "conv5_1")
+        conv5_2 = self.conv_layer(conv5_1, "conv5_2")
+        conv5_3 = self.conv_layer(conv5_2, "conv5_3")
+        pool5 = self.max_pool(conv5_3, 'pool5')
+        return pool5
 
-        self.fc6 = self.fc_layer(self.pool5, "fc6")
-        assert self.fc6.get_shape().as_list()[1:] == [4096]
-        self.relu6 = tf.nn.relu(self.fc6)
+    def construct_fc_layers(self, input):
+        fc6 = self.fc_layer(input, "fc6")
+        assert fc6.get_shape().as_list()[1:] == [4096]
+        relu6 = tf.nn.relu(fc6)
 
-        self.fc7 = self.fc_layer(self.relu6, "fc7")
-        self.relu7 = tf.nn.relu(self.fc7)
+        fc7 = self.fc_layer(relu6, "fc7")
+        relu7 = tf.nn.relu(fc7)
 
-        self.logits = self.fc_layer(self.relu7, "fc8")
+        logits = self.fc_layer(relu7, "fc8")
 
-        # self.logits = tf.nn.softmax(self.fc8, name="prob")
+        return logits
 
     def avg_pool(self, bottom, name):
         return tf.nn.avg_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
@@ -89,25 +96,18 @@ class VGGNet:
             weights = self.get_fc_weight(name)
             biases = self.get_bias(name)
 
-            # Fully connected layer. Note that the '+' operation automatically
-            # broadcasts the biases.
             fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
 
             return fc
 
     def get_conv_filter(self, name):
-
-        return tf.constant(self.weight_dict[name], name="filter")
+        return tf.get_variable(name='weights', initializer=self.weight_dict[name])
 
     def get_bias(self, name):
-        if name.startswith('fc'):
-            return tf.get_variable(name='biases', initializer=self.bias_dict[name])
-        else:
-            return tf.constant(self.bias_dict[name], name="biases")
+        return tf.get_variable(name='biases', initializer=self.bias_dict[name])
 
     def get_fc_weight(self, name):
         return tf.get_variable(name="weights", initializer=self.weight_dict[name])
-        # return tf.constant(self.weight_dict[name], name="weights")
 
     @staticmethod
     def parse_image(filename, label):
@@ -158,9 +158,9 @@ class VGGNet:
         return image_cropped, label
 
     # load dataset
-    def load_dataset(self):
+    def load_dataset(self, imgs_path):
         # % load data
-        img_dir = self.imgs_path
+        img_dir = imgs_path
         file_paths = np.array([os.path.join(img_dir,  x) for x in sorted(os.listdir(img_dir))])
 
         labels = np.array(pd.read_csv('ILSVRC_labels.txt', delim_whitespace=True, header=None).values[:, 1], dtype=np.int32)
@@ -177,11 +177,11 @@ class VGGNet:
 
         file_paths_train = file_paths[train_index]
         labels_train = labels[train_index]
-        nb_exp_train = len(labels_train)
+        # nb_exp_train = len(labels_train)
 
         file_paths_val = file_paths[val_index]
         labels_val = labels[val_index]
-        self.n_test = len(labels_val)
+        # self.n_test = len(labels_val)
 
         file_paths_train = tf.constant(file_paths_train)
         labels_train = tf.constant(labels_train)
@@ -203,16 +203,17 @@ class VGGNet:
         dataset_val = dataset_val.batch(self.batch_size)
         dataset_val = dataset_val.prefetch(buffer_size=1)
 
-        iter = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
-        self.X, self.Y = iter.get_next()
+        vgg_iter = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
+        x, y = vgg_iter.get_next()
 
-        self.train_init = iter.make_initializer(dataset_train)  # initializer for train_data
-        self.test_init = iter.make_initializer(dataset_val)
+        train_init = vgg_iter.make_initializer(dataset_train)  # initializer for train_data
+        test_init = vgg_iter.make_initializer(dataset_val)
         # return dataset_train, dataset_val, nb_exp_train, np_exp_val
+        return train_init, test_init, x, y
 
-    def loss(self):
-        entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.Y, logits=self.logits)
-        self.loss = tf.reduce_mean(entropy, name='loss')
+    def loss(self, labels, logits):
+        entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits)
+        self.op_loss = tf.reduce_mean(entropy, name='loss')
 
     def optimize(self):
         '''
@@ -221,7 +222,9 @@ class VGGNet:
         '''
         # self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss,
         #                                       global_step=self.gstep)
-        self.opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.loss, global_step=self.gstep)
+        var_list = []
+        self.op_opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.loss, var_list=var_list,
+                                                                                        global_step=self.gstep)
 
     def eval(self):
         '''
@@ -243,15 +246,15 @@ class VGGNet:
             tf.summary.scalar('loss', self.loss)
             tf.summary.scalar('accuracy', self.accuracy)
             tf.summary.histogram('histogram loss', self.loss)
-            self.summary_op = tf.summary.merge_all()
+            self.op_summary = tf.summary.merge_all()
 
-    def build(self):
+    def build(self, x, y):
         '''
         Build the computation graph
         '''
-        self.load_dataset()
-        self.inference()
-        self.loss()
+
+        logits = self.inference(x)
+        self.loss(y, logits)
         self.optimize()
         self.eval()
         self.summary()
@@ -291,7 +294,7 @@ class VGGNet:
         print('Accuracy at epoch {0}: {1} '.format(epoch, total_correct_preds / self.n_test))
         print('Took: {0} seconds'.format(time.time() - start_time))
 
-    def train(self, n_epochs):
+    def train(self, train_init, test_init, n_epochs):
         '''
         The train function alternates between training one epoch and evaluating
         '''
@@ -301,14 +304,14 @@ class VGGNet:
             sess.run(tf.global_variables_initializer())
             step = self.gstep.eval()
             for epoch in range(n_epochs):
-                step = self.train_one_epoch(sess, self.train_init, writer, epoch, step)
-                self.eval_once(sess, self.test_init, writer, epoch, step)
+                step = self.train_one_epoch(sess, train_init, writer, epoch, step)
+                self.eval_once(sess, test_init, writer, epoch, step)
         writer.close()
 
 
-
 if __name__ == '__main__':
-    vgg = VGGNet(imgs_path='/srv/node/sdc1/image_data/img_val')
-    vgg.build()
-    vgg.train(n_epochs=1)
+    vgg = VGGNet()
+    train_init, test_init, x, y = vgg.load_dataset(imgs_path='/srv/node/sdc1/image_data/img_val')
+    vgg.build(x, y)
+    vgg.train(train_init, test_init, n_epochs=1)
 
