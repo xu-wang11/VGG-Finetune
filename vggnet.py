@@ -27,7 +27,8 @@ class VGGNet:
 
     def inference(self, x):
         output = self.construct_conv_layers(x)
-        self.construct_fc_layers(output)
+        logits = self.construct_fc_layers(output)
+        return logits
 
     def construct_conv_layers(self, input):
         # model definition
