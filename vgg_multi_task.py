@@ -162,10 +162,11 @@ class VggMultiTask(VGGBase):
             sess.run(tf.global_variables_initializer())
             step = self.global_step.eval()
             for epoch in range(n_epochs):
-                step = self.train_one_epoch_imagenet(sess, train_init_imagenet, writer, epoch, step)
-                self.evaluation_imagenet(sess, test_init_imagenet, writer, epoch, step)
                 step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
                 self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
+                step = self.train_one_epoch_imagenet(sess, train_init_imagenet, writer, epoch, step)
+                self.evaluation_imagenet(sess, test_init_imagenet, writer, epoch, step)
+
         writer.close()
 
 
