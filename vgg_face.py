@@ -110,7 +110,7 @@ class VGGFace(VGGNet):
         return train_init, test_init, x, y
 
 if __name__ == '__main__':
-    vgg = VGGNet()
+    vgg = VGGFace()
     train_init, test_init, x, y = vgg.load_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba')
     vgg.build(x, y)
     vgg.train(train_init, test_init, n_epochs=1)
