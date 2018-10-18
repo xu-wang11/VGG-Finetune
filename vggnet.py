@@ -24,6 +24,8 @@ class VGGNet:
         self.op_opt = None
         self.op_loss = None
         self.op_summary = None
+        self.accuracy = None
+        self.prediction = None
 
     def inference(self, x):
         output = self.construct_conv_layers(x)
@@ -241,6 +243,8 @@ class VGGNet:
             preds = tf.nn.softmax(logits)
             correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(labels, 1))
             # self.accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
+            self.prediction = tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels, axis=1), k=5),
+                                      dtype=tf.int32)
             self.accuracy = tf.reduce_sum(
                 tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels, axis=1), k=5),
                         dtype=tf.int32))
@@ -290,15 +294,17 @@ class VGGNet:
         start_time = time.time()
         sess.run(init)
         total_correct_preds = 0
+        total_samples = 0
         try:
             while True:
-                accuracy_batch, summaries = sess.run([self.accuracy, self.op_summary])
+                prediction_batch, summaries = sess.run([self.prediction, self.op_summary])
                 writer.add_summary(summaries, global_step=step)
-                total_correct_preds += accuracy_batch
+                total_correct_preds += prediction_batch.sum()
+                total_samples += prediction_batch.shape[0]
         except tf.errors.OutOfRangeError:
             pass
 
-        print('Accuracy at epoch {0}: {1} '.format(epoch, total_correct_preds / self.n_test))
+        print('Accuracy at epoch {0}: {1} '.format(epoch, total_correct_preds / total_samples))
         print('Took: {0} seconds'.format(time.time() - start_time))
 
     def train(self, train_init, test_init, n_epochs):
