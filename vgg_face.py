@@ -1,20 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Created by wangxu on 2018/10/17
-from vggnet import VGGNet
 import tensorflow as tf
+from vgg_base import VGGBase
+import time
 import numpy as np
-import pandas as pd
-import os
+import utils
 
 
-class VGGFace(VGGNet):
+class VGGFace(VGGBase):
 
     def __init__(self):
         super().__init__()
+        self.batch_size = 64
+        self.cpu_cores = 8
+        self.skip_step = 100
+        self.lr = 0.0001
+
+        self.op_opt = None
+        self.op_loss = None
+        self.op_summary = None
+        self.accuracy = None
+        self.prediction = None
 
     # override fc layer for CelebA dataset
-    def construct_fc_layers(self, input):
+    def fc_layers(self, input):
         fc6 = self.fc_layer(input, "fc6")
         assert fc6.get_shape().as_list()[1:] == [4096]
         relu6 = tf.nn.relu(fc6)
@@ -22,7 +32,7 @@ class VGGFace(VGGNet):
         fc7 = self.fc_layer(relu6, "fc7")
         relu7 = tf.nn.relu(fc7)
 
-        logits = self.celeba_output_layer(relu7, "fc8")
+        logits = self.output_layer(relu7, "fc8", 40)
 
         return logits
 
@@ -31,103 +41,92 @@ class VGGFace(VGGNet):
         loss = tf.losses.mean_squared_error(labels=labels, predictions=logits)
         self.op_loss = tf.reduce_mean(loss, name='loss')
 
-    def eval(self, labels, logits):
-        '''
-        Count the number of right predictions in a batch
-        '''
+    def optimize(self):
+        var_list = self.trainable_variables()
+        self.op_opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.op_loss, var_list=var_list,
+                                                                                        global_step=self.global_step)
+
+    def prediction(self, labels, logits):
+
         with tf.name_scope('predict'):
             preds = tf.nn.sigmoid(logits)
             self.prediction = tf.reduce_sum(tf.cast(tf.equal(labels, tf.round(preds)), tf.float32), axis=1) / 40
-
             self.accuracy = tf.reduce_sum(self.prediction)
-
-    def celeba_output_layer(self, bottom, name):
-        with tf.variable_scope(name):
-            shape = bottom.get_shape().as_list()
-            dim = 1
-            for d in shape[1:]:
-                dim *= d
-            x = tf.reshape(bottom, [-1, dim])
-
-            initial = tf.truncated_normal_initializer(0, 0.1)
-            weights = tf.get_variable('weights', (dim, 40), tf.float32, initializer=initial)
-            biases = tf.get_variable('biases', (40,), tf.float32, initializer=tf.constant_initializer(0.1))
-
-            fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
-
-            return fc
-
-    @staticmethod
-    def parse_image_face(filename, label):
-        average_face = tf.constant(
-            np.expand_dims(np.expand_dims(np.array([93.5940, 104.7624, 129.1863], dtype=np.float32), axis=0), axis=0))
-        image_string = tf.read_file(filename)
-        image_decoded = tf.cast(tf.image.decode_jpeg(image_string), dtype=tf.float32)
-        image_resized = tf.image.resize_image_with_crop_or_pad(image_decoded, 224, 224)
-        image_bgr = tf.reverse(image_resized, axis=[-1])
-        image_nml = image_bgr - average_face
-        return image_nml, label
 
     def trainable_variables(self):
         var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8")]
         return var_list
 
-    def load_face_dataset(self, imgs_path):
-        img_dir = imgs_path
-        file_paths = np.array([os.path.join(img_dir, x) for x in sorted(os.listdir(img_dir))])
+    def build(self, x, y):
+        logits = self.inference(x)
+        self.loss(y, logits)
+        self.optimize()
+        self.prediction(y, logits)
+        self.summary()
 
-        labels = np.array(pd.read_csv('/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
-                                      delim_whitespace=True, header=None).values[:, 1:],
-                          dtype=np.float32)
+    def summary(self):
+        with tf.name_scope('summaries'):
+            tf.summary.scalar('loss', self.op_loss)
+            tf.summary.scalar('accuracy', self.accuracy)
+            tf.summary.histogram('histogram loss', self.op_loss)
+            self.op_summary = tf.summary.merge_all()
 
-        labels[labels == -1] = 0
+    def train_one_epoch(self, sess, init, writer, epoch, step):
+        start_time = time.time()
+        sess.run(init)
+        total_loss = 0
+        n_batches = 0
+        try:
+            while True:
+                _, l, summaries = sess.run([self.op_opt, self.op_loss, self.op_summary])
+                writer.add_summary(summaries, global_step=step)
+                if (step + 1) % self.skip_step == 0:
+                    print('Loss at step {0}: {1}'.format(step, l))
+                step += 1
+                total_loss += l
+                n_batches += 1
+        except tf.errors.OutOfRangeError:
+            pass
+        print('Average loss at epoch {0}: {1}'.format(epoch, total_loss / n_batches))
+        print('Took: {0} seconds'.format(time.time() - start_time))
+        return step
 
-        partition = np.array(pd.read_csv('/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt', sep=' ',
-                                         header=None).values[:, 1], dtype=int)
+    def evaluation(self, sess, init, writer, epoch, step):
+        start_time = time.time()
+        sess.run(init)
+        total_correct_preds = 0
+        total_samples = 0
+        try:
+            while True:
+                batch_prediction, summaries = sess.run([self.prediction, self.op_summary])
+                batch_prediction = np.array(batch_prediction)
+                writer.add_summary(summaries, global_step=step)
+                total_correct_preds += batch_prediction.sum()
+                total_samples += batch_prediction.shape[0]
+        except tf.errors.OutOfRangeError:
+            pass
 
-        file_paths_train = file_paths[partition == 0]
-        labels_train = labels[partition == 0]
+        print('Accuracy at epoch {0}: {1} '.format(epoch, total_correct_preds / total_samples))
+        print('Took: {0} seconds'.format(time.time() - start_time))
 
-        nb_exp_train = len(labels_train)
+    def train(self, train_init, test_init, n_epochs):
+        writer = tf.summary.FileWriter('graphs/vgg_net', tf.get_default_graph())
 
-        batch_rand_index = np.random.choice(len(labels_train), size=len(labels_train), replace=False)
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            step = self.gstep.eval()
+            for epoch in range(n_epochs):
+                step = self.train_one_epoch(sess, train_init, writer, epoch, step)
+                self.evaluation(sess, test_init, writer, epoch, step)
+        writer.close()
 
-        file_paths_train = file_paths_train[batch_rand_index]
-        labels_train = labels_train[batch_rand_index]
-
-        file_paths_train = tf.constant(file_paths_train)
-        labels_train = tf.constant(labels_train)
-
-        file_paths = file_paths[np.logical_or(partition == 1, partition == 2)]
-        labels_val = labels[np.logical_or(partition == 1, partition == 2)]
-
-        np_exp_val = len(labels_val)
-
-        file_paths_val = tf.constant(file_paths)
-        labels_val = tf.constant(labels_val)
-
-        dataset_train = tf.data.Dataset.from_tensor_slices((file_paths_train, labels_train))
-        dataset_train = dataset_train.shuffle(buffer_size=100000)
-        dataset_train = dataset_train.map(map_func=self.parse_image_face, num_parallel_calls=self.cpu_cores)
-        dataset_train = dataset_train.batch(self.batch_size)
-        dataset_train = dataset_train.prefetch(buffer_size=1)
-
-        dataset_val = tf.data.Dataset.from_tensor_slices((file_paths_val, labels_val))
-        dataset_val = dataset_val.map(map_func=self.parse_image_face, num_parallel_calls=self.cpu_cores)
-        dataset_val = dataset_val.batch(self.batch_size)
-        dataset_val = dataset_val.prefetch(buffer_size=1)
-
-        vgg_iter = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
-        x, y = vgg_iter.get_next()
-
-        train_init = vgg_iter.make_initializer(dataset_train)  # initializer for train_data
-        test_init = vgg_iter.make_initializer(dataset_val)
-        # return dataset_train, dataset_val, nb_exp_train, np_exp_val
-        return train_init, test_init, x, y
 
 if __name__ == '__main__':
     vgg = VGGFace()
-    train_init, test_init, x, y = vgg.load_face_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba')
+    train_init, test_init, x, y = utils.load_face_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba',
+                                                          attr_file='/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
+                                                          partition_file='/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt',
+                                                          cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
     vgg.build(x, y)
     vgg.train(train_init, test_init, n_epochs=20)
 
