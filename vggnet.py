@@ -224,19 +224,19 @@ class VGGNet:
         # self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss,
         #                                       global_step=self.gstep)
         var_list = []
-        self.op_opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.loss, var_list=var_list,
+        self.op_opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.op_loss, var_list=var_list,
                                                                                         global_step=self.gstep)
 
-    def eval(self):
+    def eval(self, labels, logits):
         '''
         Count the number of right predictions in a batch
         '''
         with tf.name_scope('predict'):
-            preds = tf.nn.softmax(self.logits)
-            correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(self.Y, 1))
+            preds = tf.nn.softmax(logits)
+            correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(labels, 1))
             # self.accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
             self.accuracy = tf.reduce_sum(
-                tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(self.Y, axis=1), k=5),
+                tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels, axis=1), k=5),
                         dtype=tf.int32))
 
     def summary(self):
@@ -244,9 +244,9 @@ class VGGNet:
         Create summaries to write on TensorBoard
         '''
         with tf.name_scope('summaries'):
-            tf.summary.scalar('loss', self.loss)
+            tf.summary.scalar('loss', self.op_loss)
             tf.summary.scalar('accuracy', self.accuracy)
-            tf.summary.histogram('histogram loss', self.loss)
+            tf.summary.histogram('histogram loss', self.op_loss)
             self.op_summary = tf.summary.merge_all()
 
     def build(self, x, y):
@@ -257,7 +257,7 @@ class VGGNet:
         logits = self.inference(x)
         self.loss(y, logits)
         self.optimize()
-        self.eval()
+        self.eval(y, logits)
         self.summary()
 
     def train_one_epoch(self, sess, init, writer, epoch, step):
@@ -267,7 +267,7 @@ class VGGNet:
         n_batches = 0
         try:
             while True:
-                _, l, summaries = sess.run([self.opt, self.loss, self.summary_op])
+                _, l, summaries = sess.run([self.op_opt, self.op_loss, self.op_summary])
                 writer.add_summary(summaries, global_step=step)
                 if (step + 1) % self.skip_step == 0:
                     print('Loss at step {0}: {1}'.format(step, l))
@@ -286,7 +286,7 @@ class VGGNet:
         total_correct_preds = 0
         try:
             while True:
-                accuracy_batch, summaries = sess.run([self.accuracy, self.summary_op])
+                accuracy_batch, summaries = sess.run([self.accuracy, self.op_summary])
                 writer.add_summary(summaries, global_step=step)
                 total_correct_preds += accuracy_batch
         except tf.errors.OutOfRangeError:
