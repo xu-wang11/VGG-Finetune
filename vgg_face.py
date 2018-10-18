@@ -108,12 +108,12 @@ class VGGFace(VGGNet):
 
         dataset_train = tf.data.Dataset.from_tensor_slices((file_paths_train, labels_train))
         dataset_train = dataset_train.shuffle(buffer_size=100000)
-        dataset_train = dataset_train.map(map_func=self.parse_image, num_parallel_calls=self.cpu_cores)
+        dataset_train = dataset_train.map(map_func=self.parse_image_face, num_parallel_calls=self.cpu_cores)
         dataset_train = dataset_train.batch(self.batch_size)
         dataset_train = dataset_train.prefetch(buffer_size=1)
 
         dataset_val = tf.data.Dataset.from_tensor_slices((file_paths_val, labels_val))
-        dataset_val = dataset_val.map(map_func=self.parse_image, num_parallel_calls=self.cpu_cores)
+        dataset_val = dataset_val.map(map_func=self.parse_image_face, num_parallel_calls=self.cpu_cores)
         dataset_val = dataset_val.batch(self.batch_size)
         dataset_val = dataset_val.prefetch(buffer_size=1)
 
