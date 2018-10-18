@@ -45,8 +45,7 @@ class VggMultiTask(VGGBase):
         entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels[0], logits=logits[0])
         op_loss_imagenet = tf.reduce_mean(entropy, name='loss')
 
-        logits = tf.nn.sigmoid(logits[1])
-        loss = tf.losses.mean_squared_error(labels=labels[1], predictions=logits[1])
+        loss = tf.losses.mean_squared_error(labels=labels[1], predictions=tf.nn.sigmoid(logits[1]))
         op_loss_celeba = tf.reduce_mean(loss, name='loss')
 
         self.op_loss = [op_loss_imagenet, op_loss_celeba]
