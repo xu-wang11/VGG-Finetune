@@ -80,8 +80,7 @@ class VggMultiTask(VGGBase):
 
     def summary(self):
         with tf.name_scope('summaries'):
-            tf.summary.scalar('loss0', self.op_loss[0])
-            tf.summary.scalar('loss1', self.op_loss[1])
+
             self.op_summary = tf.summary.merge_all()
 
     def train_one_epoch_imagenet(self, sess, init, writer, epoch, step):
