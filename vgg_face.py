@@ -58,7 +58,7 @@ class VGGFace(VGGNet):
             return fc
 
     @staticmethod
-    def parse_image(filename, label):
+    def parse_image_face(filename, label):
         average_face = tf.constant(
             np.expand_dims(np.expand_dims(np.array([93.5940, 104.7624, 129.1863], dtype=np.float32), axis=0), axis=0))
         image_string = tf.read_file(filename)
@@ -72,7 +72,7 @@ class VGGFace(VGGNet):
         var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8")]
         return var_list
 
-    def load_dataset(self, imgs_path):
+    def load_face_dataset(self, imgs_path):
         img_dir = imgs_path
         file_paths = np.array([os.path.join(img_dir, x) for x in sorted(os.listdir(img_dir))])
 
@@ -127,7 +127,7 @@ class VGGFace(VGGNet):
 
 if __name__ == '__main__':
     vgg = VGGFace()
-    train_init, test_init, x, y = vgg.load_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba')
+    train_init, test_init, x, y = vgg.load_face_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba')
     vgg.build(x, y)
     vgg.train(train_init, test_init, n_epochs=20)
 
