@@ -60,7 +60,7 @@ class VggMultiTask(VGGFace):
 
     def loss_imagenet(self, labels, logits):
         entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits)
-        self.op_loss = tf.reduce_mean(entropy, name='loss')
+        self.op_loss_imagenet = tf.reduce_mean(entropy, name='loss')
 
     def optimize_celeba(self):
         '''
@@ -82,7 +82,7 @@ class VggMultiTask(VGGFace):
         #                                       global_step=self.gstep)
         var_list = self.trainable_variables()
         self.op_opt_imagenet = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
-            self.op_loss_image_net, var_list=var_list, global_step=self.gstep)
+            self.op_loss_imagenet, var_list=var_list, global_step=self.gstep)
 
     def eval_imagenet(self, labels, logits):
         '''
@@ -106,7 +106,7 @@ class VggMultiTask(VGGFace):
             preds = tf.nn.sigmoid(logits)
             self.prediction_celeba = tf.reduce_sum(tf.cast(tf.equal(labels, tf.round(preds)), tf.float32), axis=1) / 40
 
-            self.accuracy_celeba = tf.reduce_sum(self.prediction)
+            self.accuracy_celeba = tf.reduce_sum(self.prediction_celeba)
 
     def build(self, x, y1, y2):
         '''
@@ -120,7 +120,7 @@ class VggMultiTask(VGGFace):
         self.optimize_celeba()
         self.eval_imagenet(y1, logits[0])
         self.eval_celeba(y2, logits[1])
-        self.summary()
+        # self.summary()
 
     def train_one_epoch_imagenet(self, sess, init, writer, epoch, step):
         start_time = time.time()
@@ -129,8 +129,8 @@ class VggMultiTask(VGGFace):
         n_batches = 0
         try:
             while True:
-                _, l, summaries = sess.run([self.op_opt_imagenet, self.op_loss_imagenet, self.op_summary])
-                writer.add_summary(summaries, global_step=step)
+                _, l = sess.run([self.op_opt_imagenet, self.op_loss_imagenet])
+                # writer.add_summary(summaries, global_step=step)
                 if (step + 1) % self.skip_step == 0:
                     print('Loss at step {0}: {1}'.format(step, l))
                 step += 1
@@ -149,8 +149,7 @@ class VggMultiTask(VGGFace):
         total_samples = 0
         try:
             while True:
-                prediction_batch, summaries = sess.run([self.prediction_imagenet, self.op_summary])
-                writer.add_summary(summaries, global_step=step)
+                prediction_batch = sess.run([self.prediction_imagenet])
                 total_correct_preds += prediction_batch.sum()
                 total_samples += prediction_batch.shape[0]
         except tf.errors.OutOfRangeError:
@@ -166,8 +165,7 @@ class VggMultiTask(VGGFace):
         n_batches = 0
         try:
             while True:
-                _, l, summaries = sess.run([self.op_opt_celeba, self.op_loss_celeba, self.op_summary])
-                writer.add_summary(summaries, global_step=step)
+                _, l = sess.run([self.op_opt_celeba, self.op_loss_celeba])
                 if (step + 1) % self.skip_step == 0:
                     print('Loss at step {0}: {1}'.format(step, l))
                 step += 1
@@ -186,8 +184,7 @@ class VggMultiTask(VGGFace):
         total_samples = 0
         try:
             while True:
-                prediction_batch, summaries = sess.run([self.prediction_celeba, self.op_summary])
-                writer.add_summary(summaries, global_step=step)
+                prediction_batch = sess.run([self.prediction_celeba])
                 total_correct_preds += prediction_batch.sum()
                 total_samples += prediction_batch.shape[0]
         except tf.errors.OutOfRangeError:
