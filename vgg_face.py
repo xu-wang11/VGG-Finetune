@@ -35,8 +35,8 @@ class VGGFace(VGGNet):
             x = tf.reshape(bottom, [-1, dim])
 
             initial = tf.truncated_normal_initializer(0, 0.1)
-            weights = tf.get_variable(name, (dim, 10), tf.float32, initializer=initial)
-            biases = tf.get_variable(name, (10,), tf.float32, initializer=tf.constant_initializer(0.1))
+            weights = tf.get_variable('weights', (dim, 10), tf.float32, initializer=initial)
+            biases = tf.get_variable('biases', (10,), tf.float32, initializer=tf.constant_initializer(0.1))
 
             fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
 
