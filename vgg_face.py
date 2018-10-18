@@ -60,12 +60,14 @@ class VGGFace(VGGNet):
         img_dir = imgs_path
         file_paths = np.array([os.path.join(img_dir, x) for x in sorted(os.listdir(img_dir))])
 
-        labels = np.array(pd.read_csv('list_attr_celeba.txt', delim_whitespace=True, header=None).values[:, 1:],
+        labels = np.array(pd.read_csv('/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba/list_attr_celeba.txt',
+                                      delim_whitespace=True, header=None).values[:, 1:],
                           dtype=np.float32)
 
         labels[labels == -1] = 0
 
-        partition = np.array(pd.read_csv('list_eval_partition.txt', sep=' ', header=None).values[:, 1], dtype=int)
+        partition = np.array(pd.read_csv('/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt', sep=' ',
+                                         header=None).values[:, 1], dtype=int)
 
         file_paths_train = file_paths[partition == 0]
         labels_train = labels[partition == 0]
@@ -109,7 +111,7 @@ class VGGFace(VGGNet):
 
 if __name__ == '__main__':
     vgg = VGGNet()
-    train_init, test_init, x, y = vgg.load_dataset(imgs_path='/srv/node/sdc1/image_data/img_val')
+    train_init, test_init, x, y = vgg.load_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba')
     vgg.build(x, y)
     vgg.train(train_init, test_init, n_epochs=1)
 
