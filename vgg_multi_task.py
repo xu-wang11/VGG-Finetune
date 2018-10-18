@@ -46,7 +46,7 @@ class VggMultiTask(VGGBase):
         op_loss_imagenet = tf.reduce_mean(entropy, name='loss')
 
         logits = tf.nn.sigmoid(logits[1])
-        loss = tf.losses.mean_squared_error(labels=labels[1], predictions=logits)
+        loss = tf.losses.mean_squared_error(labels=labels[1], predictions=logits[1])
         op_loss_celeba = tf.reduce_mean(loss, name='loss')
 
         self.op_loss = [op_loss_imagenet, op_loss_celeba]
@@ -56,6 +56,7 @@ class VggMultiTask(VGGBase):
         var_list = self.trainable_variables()
         op_opt_imagenet = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
             self.op_loss[0], var_list=var_list, global_step=self.global_step)
+
         op_opt_celeba = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
             self.op_loss[1], var_list=var_list, global_step=self.global_step)
         self.op_opt = [op_opt_imagenet, op_opt_celeba]
