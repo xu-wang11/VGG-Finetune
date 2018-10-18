@@ -41,7 +41,7 @@ class VggMultiTask(VGGFace):
                 dim *= d
             x = tf.reshape(input, [-1, dim])
             initial = tf.truncated_normal_initializer(0, 0.1)
-            weights = tf.get_variable('weights', self.weight_dict[name], tf.float32, initializer=initial)
+            weights = tf.get_variable('weights', self.weight_dict[name].shape, tf.float32, initializer=initial)
             biases = tf.get_variable('biases', self.bias_dict[name].shape, tf.float32,
                                      initializer=tf.constant_initializer(0.1))
 
