@@ -90,8 +90,8 @@ class VggMultiTask(VGGBase):
         n_batches = 0
         try:
             while True:
-                _, l, summaries = sess.run([self.op_opt[0], self.op_loss[0], self.op_summary])
-                writer.add_summary(summaries, global_step=step)
+                _, l = sess.run([self.op_opt[0], self.op_loss[0]])
+
                 if (step + 1) % self.skip_step == 0:
                     print('Loss at step {0}: {1}'.format(step, l))
                 step += 1
@@ -126,8 +126,8 @@ class VggMultiTask(VGGBase):
         n_batches = 0
         try:
             while True:
-                _, l, summaries = sess.run([self.op_opt[1], self.op_loss[1], self.op_summary])
-                writer.add_summary(summaries, global_step=step)
+                _, l = sess.run([self.op_opt[1], self.op_loss[1]])
+
                 if (step + 1) % self.skip_step == 0:
                     print('Loss at step {0}: {1}'.format(step, l))
                 step += 1
