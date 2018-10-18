@@ -7,9 +7,7 @@ from abc import abstractmethod
 
 class VGGBase:
     """
-    VGGBase is the class for inference.
-    The training and evaluation method
-    should be implemented in subclass.
+    VGGBase is the class for inference. The training and evaluation method should be implemented in subclass.
     """
 
     def __init__(self):
@@ -18,6 +16,7 @@ class VGGBase:
         self.global_step = None
 
     def load_model(self, model_path):
+        print("loading model from {0}".format(model_path))
         self.weight_dict, self.bias_dict = pickle.load(open(model_path, 'rb'))
 
     def save_model(self, save_path):
@@ -140,6 +139,14 @@ class VGGBase:
     def get_fc_weight(self, name):
         return tf.get_variable(name="weights", initializer=self.weight_dict[name])
 
+    def build(self, x, y):
+        logits = self.inference(x)
+        self.loss(y, logits)
+        self.optimize()
+        self.prediction(y, logits)
+        self.summary()
+
+
     @abstractmethod
     def loss(self):
         pass
@@ -158,5 +165,9 @@ class VGGBase:
 
     @abstractmethod
     def optimize(self):
+        pass
+
+    @abstractmethod
+    def summary(self):
         pass
 

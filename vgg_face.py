@@ -57,13 +57,6 @@ class VGGFace(VGGBase):
         var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8")]
         return var_list
 
-    def build(self, x, y):
-        logits = self.inference(x)
-        self.loss(y, logits)
-        self.optimize()
-        self.prediction(y, logits)
-        self.summary()
-
     def summary(self):
         with tf.name_scope('summaries'):
             tf.summary.scalar('loss', self.op_loss)

@@ -6,6 +6,7 @@ import tensorflow as tf
 import time
 import numpy as np
 
+
 class VggMultiTask(VGGFace):
 
     def __init__(self):

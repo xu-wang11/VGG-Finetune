@@ -114,6 +114,7 @@ if __name__ == '__main__':
     train_init, test_init, x, y = utils.load_image_net_dataset(imgs_path='/srv/node/sdc1/image_data/img_val',
                                                                label_path='ILSVRC_labels.txt',
                                                                cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
+    vgg.load_model(model_path='Weights_imageNet')
     vgg.build(x, y)
     vgg.train(train_init, test_init, n_epochs=1)
 
