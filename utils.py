@@ -120,8 +120,8 @@ def parse_celeba_image(filename, label):
     return image_nml, label
 
 
-def load_face_dataset(imgs_dir, attr_file, partition_file, cpu_cores, batch_size):
-    file_paths = np.array([os.path.join(imgs_dir, x) for x in sorted(os.listdir(imgs_dir))])
+def load_face_dataset(imgs_path, attr_file, partition_file, cpu_cores, batch_size):
+    file_paths = np.array([os.path.join(imgs_path, x) for x in sorted(os.listdir(imgs_path))])
 
     labels = np.array(pd.read_csv(attr_file, delim_whitespace=True, header=None).values[:, 1:], dtype=np.float32)
 
