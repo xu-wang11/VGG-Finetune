@@ -4,7 +4,7 @@
 from vgg_face import VGGFace
 import tensorflow as tf
 import time
-
+import numpy as np
 
 class VggMultiTask(VGGFace):
 
@@ -151,7 +151,7 @@ class VggMultiTask(VGGFace):
             while True:
                 prediction_batch, summaries = sess.run([self.prediction_imagenet, self.op_summary])
                 writer.add_summary(summaries, global_step=step)
-                total_correct_preds += prediction_batch.sum()
+                total_correct_preds += np.sum(prediction_batch)
                 total_samples += prediction_batch.shape[0]
         except tf.errors.OutOfRangeError:
             pass
