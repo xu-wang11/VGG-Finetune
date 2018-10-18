@@ -41,7 +41,6 @@ class VGGFace(VGGNet):
 
             self.accuracy = tf.reduce_sum(self.prediction)
 
-
     def celeba_output_layer(self, bottom, name):
         with tf.variable_scope(name):
             shape = bottom.get_shape().as_list()

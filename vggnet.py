@@ -279,8 +279,8 @@ class VGGNet:
             while True:
                 _, l, summaries = sess.run([self.op_opt, self.op_loss, self.op_summary])
                 writer.add_summary(summaries, global_step=step)
-                # if (step + 1) % self.skip_step == 0:
-                #     print('Loss at step {0}: {1}'.format(step, l))
+                if (step + 1) % self.skip_step == 0:
+                    print('Loss at step {0}: {1}'.format(step, l))
                 step += 1
                 total_loss += l
                 n_batches += 1
