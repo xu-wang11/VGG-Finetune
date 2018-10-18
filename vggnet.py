@@ -21,7 +21,7 @@ class VGGNet(VGGBase):
         self.op_loss = None
         self.op_summary = None
         self.accuracy = None
-        self.prediction = None
+        self.preds = None
 
     def loss(self, labels, logits):
         entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits)
@@ -39,7 +39,7 @@ class VGGNet(VGGBase):
     def prediction(self, labels, logits):
         with tf.name_scope('predict'):
             predictions = tf.nn.softmax(logits)
-            self.prediction = tf.cast(tf.nn.in_top_k(predictions=predictions, targets=tf.argmax(labels, axis=1), k=5),
+            self.preds = tf.cast(tf.nn.in_top_k(predictions=predictions, targets=tf.argmax(labels, axis=1), k=5),
                                       dtype=tf.int32)
             self.accuracy = tf.reduce_mean(
                 tf.cast(tf.nn.in_top_k(predictions=predictions, targets=tf.argmax(labels, axis=1), k=5),
@@ -86,7 +86,7 @@ class VGGNet(VGGBase):
         total_samples = 0
         try:
             while True:
-                batch_prediction, summaries = sess.run([self.prediction, self.op_summary])
+                batch_prediction, summaries = sess.run([self.preds, self.op_summary])
                 batch_prediction = np.array(batch_prediction)
                 writer.add_summary(summaries, global_step=step)
                 total_correct_preds += batch_prediction.sum()
