@@ -60,7 +60,7 @@ class VGGFace(VGGNet):
         img_dir = imgs_path
         file_paths = np.array([os.path.join(img_dir, x) for x in sorted(os.listdir(img_dir))])
 
-        labels = np.array(pd.read_csv('/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba/list_attr_celeba.txt',
+        labels = np.array(pd.read_csv('/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
                                       delim_whitespace=True, header=None).values[:, 1:],
                           dtype=np.float32)
 
