@@ -11,7 +11,7 @@ import os
 class VGGFace(VGGNet):
 
     def __init__(self):
-        pass
+        super().__init__()
 
     # override fc layer for CelebA dataset
     def construct_fc_layers(self, input):
