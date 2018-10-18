@@ -146,7 +146,6 @@ class VGGBase:
         self.prediction(y, logits)
         self.summary()
 
-
     @abstractmethod
     def loss(self):
         pass

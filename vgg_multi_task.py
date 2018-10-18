@@ -1,27 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Created by wangxu on 2018/10/18
-from vgg_face import VGGFace
+from vgg_base import VGGBase
 import tensorflow as tf
 import time
 import numpy as np
+import utils
 
 
-class VggMultiTask(VGGFace):
+class VggMultiTask(VGGBase):
 
     def __init__(self):
         super().__init__()
-        self.op_loss_celeba = None
-        self.op_loss_imagenet = None
-        self.op_opt_celeba = None
-        self.op_opt_imagenet = None
-        self.prediction_imagenet = None
-        self.prediction_celeba = None
-        self.accuracy_imagenet = None
-        self.accuracy_celeba = None
+        self.batch_size = 64
+        self.cpu_cores = 8
+        self.skip_step = 100
+        self.lr = 0.0001
 
-    # override fc layer for CelebA dataset
-    def construct_fc_layers(self, input):
+        self.op_opt = None
+        self.op_loss = None
+        self.op_summary = None
+        self.accuracy = None
+        self.preds = None
+
+    def fc_layers(self, input):
         fc6 = self.fc_layer_like(input, "fc6")
         assert fc6.get_shape().as_list()[1:] == [4096]
         relu6 = tf.nn.relu(fc6)
@@ -30,98 +32,57 @@ class VggMultiTask(VGGFace):
         relu7 = tf.nn.relu(fc7)
 
         tasks_imagenet = self.fc_layer_like(relu7, "fc8")
-        tasks_celeba = self.celeba_output_layer(relu7, "fc9")
+        tasks_celeba = self.output_layer(relu7, "fc9", 40)
 
         return [tasks_imagenet, tasks_celeba]
-
-    def fc_layer_like(self, input, name):
-        with tf.variable_scope(name):
-            shape = input.get_shape().as_list()
-            dim = 1
-            for d in shape[1:]:
-                dim *= d
-            x = tf.reshape(input, [-1, dim])
-            initial = tf.truncated_normal_initializer(0, 0.1)
-            weights = tf.get_variable('weights', self.weight_dict[name].shape, tf.float32, initializer=initial)
-            biases = tf.get_variable('biases', self.bias_dict[name].shape, tf.float32,
-                                     initializer=tf.constant_initializer(0.1))
-
-            fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
-
-            return fc
 
     def trainable_variables(self):
         var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
         return var_list
 
-    def loss_celeba(self, labels, logits):
-        logits = tf.nn.sigmoid(logits)
-        loss = tf.losses.mean_squared_error(labels=labels, predictions=logits)
-        self.op_loss_celeba = tf.reduce_mean(loss, name='loss')
+    def loss(self, labels, logits):
 
-    def loss_imagenet(self, labels, logits):
-        entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits)
-        self.op_loss_imagenet = tf.reduce_mean(entropy, name='loss')
+        entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels[0], logits=logits[0])
+        op_loss_imagenet = tf.reduce_mean(entropy, name='loss')
 
-    def optimize_celeba(self):
-        '''
-        Define training op
-        using Adam Gradient Descent to minimize cost
-        '''
-        # self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss,
-        #                                       global_step=self.gstep)
+        logits = tf.nn.sigmoid(logits[1])
+        loss = tf.losses.mean_squared_error(labels=labels[1], predictions=logits)
+        op_loss_celeba = tf.reduce_mean(loss, name='loss')
+
+        self.op_loss = [op_loss_imagenet, op_loss_celeba]
+
+    def optimize(self):
+
         var_list = self.trainable_variables()
-        self.op_opt_celeba = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
-            self.op_loss_celeba, var_list=var_list, global_step=self.gstep)
+        op_opt_imagenet = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
+            self.op_loss[0], var_list=var_list, global_step=self.global_step)
+        op_opt_celeba = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
+            self.op_loss[1], var_list=var_list, global_step=self.global_step)
+        self.op_opt = [op_opt_imagenet, op_opt_celeba]
 
-    def optimize_imagenet(self):
-        '''
-        Define training op
-        using Adam Gradient Descent to minimize cost
-        '''
-        # self.opt = tf.train.AdamOptimizer(self.lr).minimize(self.loss,
-        #                                       global_step=self.gstep)
-        var_list = self.trainable_variables()
-        self.op_opt_imagenet = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
-            self.op_loss_imagenet, var_list=var_list, global_step=self.gstep)
-
-    def eval_imagenet(self, labels, logits):
-        '''
-        Count the number of right predictions in a batch
-        '''
+    def prediction(self, labels, logits):
         with tf.name_scope('predict'):
-            preds = tf.nn.softmax(logits)
-            correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(labels, 1))
-            # self.accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
-            self.prediction_imagenet = tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels, axis=1), k=5),
+            preds = tf.nn.softmax(logits[0])
+
+            prediction_imagenet = tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels[0], axis=1), k=5),
                                       dtype=tf.int32)
-            self.accuracy_imagenet = tf.reduce_sum(
-                tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels, axis=1), k=5),
+            accuracy_imagenet = tf.reduce_sum(
+                tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels[0], axis=1), k=5),
                         dtype=tf.int32))
 
-    def eval_celeba(self, labels, logits):
-        '''
-        Count the number of right predictions in a batch
-        '''
-        with tf.name_scope('predict'):
-            preds = tf.nn.sigmoid(logits)
-            self.prediction_celeba = tf.reduce_sum(tf.cast(tf.equal(labels, tf.round(preds)), tf.float32), axis=1) / 40
+            preds = tf.nn.sigmoid(logits[1])
+            prediction_celeba = tf.reduce_sum(tf.cast(tf.equal(labels[1], tf.round(preds)), tf.float32), axis=1) / 40
 
-            self.accuracy_celeba = tf.reduce_sum(self.prediction_celeba)
+            accuracy_celeba = tf.reduce_sum(prediction_celeba)
 
-    def build(self, x, y1, y2):
-        '''
-        Build the computation graph
-        '''
+            self.preds = [prediction_imagenet, prediction_celeba]
+            self.accuracy = [accuracy_imagenet, accuracy_celeba]
 
-        logits = self.inference(x)
-        self.loss_imagenet(y1, logits[0])
-        self.loss_celeba(y2, logits[1])
-        self.optimize_imagenet()
-        self.optimize_celeba()
-        self.eval_imagenet(y1, logits[0])
-        self.eval_celeba(y2, logits[1])
-        # self.summary()
+    def summary(self):
+        with tf.name_scope('summaries'):
+            tf.summary.scalar('loss0', self.op_loss[0])
+            tf.summary.scalar('loss1', self.op_loss[1])
+            self.op_summary = tf.summary.merge_all()
 
     def train_one_epoch_imagenet(self, sess, init, writer, epoch, step):
         start_time = time.time()
@@ -130,8 +91,8 @@ class VggMultiTask(VGGFace):
         n_batches = 0
         try:
             while True:
-                _, l = sess.run([self.op_opt_imagenet, self.op_loss_imagenet])
-                # writer.add_summary(summaries, global_step=step)
+                _, l, summaries = sess.run([self.op_opt[0], self.op_loss[0], self.op_summary])
+                writer.add_summary(summaries, global_step=step)
                 if (step + 1) % self.skip_step == 0:
                     print('Loss at step {0}: {1}'.format(step, l))
                 step += 1
@@ -143,14 +104,14 @@ class VggMultiTask(VGGFace):
         print('Took: {0} seconds'.format(time.time() - start_time))
         return step
 
-    def eval_once_imagenet(self, sess, init, writer, epoch, step):
+    def evaluation_imagenet(self, sess, init, writer, epoch, step):
         start_time = time.time()
         sess.run(init)
         total_correct_preds = 0
         total_samples = 0
         try:
             while True:
-                prediction_batch = sess.run([self.prediction_imagenet])
+                prediction_batch = sess.run([self.preds[0]])
                 total_correct_preds += np.sum(prediction_batch)
                 total_samples += prediction_batch.shape[0]
         except tf.errors.OutOfRangeError:
@@ -166,7 +127,8 @@ class VggMultiTask(VGGFace):
         n_batches = 0
         try:
             while True:
-                _, l = sess.run([self.op_opt_celeba, self.op_loss_celeba])
+                _, l, summaries = sess.run([self.op_opt[1], self.op_loss[1], self.op_summary])
+                writer.add_summary(summaries, global_step=step)
                 if (step + 1) % self.skip_step == 0:
                     print('Loss at step {0}: {1}'.format(step, l))
                 step += 1
@@ -178,14 +140,14 @@ class VggMultiTask(VGGFace):
         print('Took: {0} seconds'.format(time.time() - start_time))
         return step
 
-    def eval_once_celeba(self, sess, init, writer, epoch, step):
+    def evaluation_celeba(self, sess, init, writer, epoch, step):
         start_time = time.time()
         sess.run(init)
         total_correct_preds = 0
         total_samples = 0
         try:
             while True:
-                prediction_batch = sess.run([self.prediction_celeba])
+                prediction_batch = sess.run([self.preds[1]])
                 total_correct_preds += prediction_batch.sum()
                 total_samples += prediction_batch.shape[0]
         except tf.errors.OutOfRangeError:
@@ -195,30 +157,37 @@ class VggMultiTask(VGGFace):
         print('Took: {0} seconds'.format(time.time() - start_time))
 
     def train(self, train_init_imagenet, test_init_imagenet, train_init_celeba, test_init_celeba, n_epochs):
-        writer = tf.summary.FileWriter('graphs/convnet', tf.get_default_graph())
+        writer = tf.summary.FileWriter('graphs/multitask', tf.get_default_graph())
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            step = self.gstep.eval()
+            step = self.global_step.eval()
             for epoch in range(n_epochs):
                 step = self.train_one_epoch_imagenet(sess, train_init_imagenet, writer, epoch, step)
-                self.eval_once_imagenet(sess, test_init_imagenet, writer, epoch, step)
+                self.evaluation_imagenet(sess, test_init_imagenet, writer, epoch, step)
                 step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
-                self.eval_once_celeba(sess, test_init_celeba, writer, epoch, step)
+                self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
         writer.close()
-
-    def run(self):
-        train_init_imagenet, test_init_imagenet, x1, y1 = self.load_dataset(imgs_path='/srv/node/sdc1/image_data/img_val')
-        train_init_celeba, test_init_celeba, x2, y2 = self.load_face_dataset(
-            imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba')
-
-        self.build(x1, y1, y2)
-        self.train(train_init_imagenet, test_init_imagenet, train_init_celeba, test_init_celeba, n_epochs=20)
 
 
 if __name__ == '__main__':
     vgg = VggMultiTask()
-    vgg.run()
+    train_init_image_net, test_init_image_net, x_image_net, y_image_net = utils.load_image_net_dataset(
+        imgs_path='/srv/node/sdc1/image_data/img_val', label_path='ILSVRC_labels.txt',
+        cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
+
+    train_init_celeba, test_init_celeba, x_celeba, y_celeba = utils.load_face_dataset(
+        imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba',
+        attr_file='/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
+        partition_file='/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt',
+        cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
+
+    vgg.load_model('Weights_imageNet')
+    vgg.build(x_image_net, [y_image_net, y_celeba])
+    vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=20)
+
+
+
 
 
 
