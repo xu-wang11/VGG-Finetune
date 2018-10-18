@@ -185,7 +185,7 @@ if __name__ == '__main__':
         cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
 
     vgg.load_model('Weights_imageNet')
-    vgg.build(x_image_net, [y_image_net, y_celeba])
+    vgg.build(x_celeba, [y_image_net, y_celeba])
     vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=20)
 
 
