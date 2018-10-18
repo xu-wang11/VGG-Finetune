@@ -21,7 +21,7 @@ class VGGFace(VGGBase):
         self.op_loss = None
         self.op_summary = None
         self.accuracy = None
-        self.prediction = None
+        self.preds = None
 
     # override fc layer for CelebA dataset
     def fc_layers(self, input):
@@ -50,8 +50,8 @@ class VGGFace(VGGBase):
 
         with tf.name_scope('predict'):
             preds = tf.nn.sigmoid(logits)
-            self.prediction = tf.reduce_sum(tf.cast(tf.equal(labels, tf.round(preds)), tf.float32), axis=1) / 40
-            self.accuracy = tf.reduce_sum(self.prediction)
+            self.preds = tf.reduce_sum(tf.cast(tf.equal(labels, tf.round(preds)), tf.float32), axis=1) / 40
+            self.accuracy = tf.reduce_sum(self.preds)
 
     def trainable_variables(self):
         var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8")]
@@ -91,7 +91,7 @@ class VGGFace(VGGBase):
         total_samples = 0
         try:
             while True:
-                batch_prediction, summaries = sess.run([self.prediction, self.op_summary])
+                batch_prediction, summaries = sess.run([self.preds, self.op_summary])
                 batch_prediction = np.array(batch_prediction)
                 writer.add_summary(summaries, global_step=step)
                 total_correct_preds += batch_prediction.sum()
@@ -107,7 +107,7 @@ class VGGFace(VGGBase):
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            step = self.gstep.eval()
+            step = self.global_step.eval()
             for epoch in range(n_epochs):
                 step = self.train_one_epoch(sess, train_init, writer, epoch, step)
                 self.evaluation(sess, test_init, writer, epoch, step)
@@ -120,6 +120,7 @@ if __name__ == '__main__':
                                                           attr_file='/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
                                                           partition_file='/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt',
                                                           cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
+    vgg.load_model(model_path='Weights_imageNet')
     vgg.build(x, y)
     vgg.train(train_init, test_init, n_epochs=20)
 
