@@ -228,10 +228,10 @@ class VGGNet:
                                                                                         global_step=self.gstep)
 
     def trainable_variables(self):
-        trainable_var_list = tf.trainable_variables()
-        for v in trainable_var_list:
-            print(v.name)
-        return trainable_var_list
+
+        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
+
+        return var_list
 
     def eval(self, labels, logits):
         '''
