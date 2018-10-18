@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 import os
 
-class VGGCelebA(VGGNet):
+
+class VGGFace(VGGNet):
 
     def __init__(self):
         pass
@@ -42,14 +43,18 @@ class VGGCelebA(VGGNet):
 
     @staticmethod
     def parse_image(filename, label):
-        averageImg_BGR_VGG_Face = tf.constant(
+        average_face = tf.constant(
             np.expand_dims(np.expand_dims(np.array([93.5940, 104.7624, 129.1863], dtype=np.float32), axis=0), axis=0))
         image_string = tf.read_file(filename)
         image_decoded = tf.cast(tf.image.decode_jpeg(image_string), dtype=tf.float32)
         image_resized = tf.image.resize_image_with_crop_or_pad(image_decoded, 224, 224)
         image_bgr = tf.reverse(image_resized, axis=[-1])
-        image_nml = image_bgr - averageImg_BGR_VGG_Face
+        image_nml = image_bgr - average_face
         return image_nml, label
+
+    def trainable_variables(self):
+        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8")]
+        return var_list
 
     def load_dataset(self, imgs_path):
         img_dir = imgs_path
@@ -90,10 +95,22 @@ class VGGCelebA(VGGNet):
         dataset_train = dataset_train.prefetch(buffer_size=1)
 
         dataset_val = tf.data.Dataset.from_tensor_slices((file_paths_val, labels_val))
-        #    dataset_face_val = dataset_face_val.shuffle(buffer_size=100000)
         dataset_val = dataset_val.map(map_func=self.parse_image, num_parallel_calls=self.cpu_cores)
         dataset_val = dataset_val.batch(self.batch_size)
-        datasete_val = dataset_val.prefetch(buffer_size=1)
+        dataset_val = dataset_val.prefetch(buffer_size=1)
 
-        return dataset_train, dataset_val, nb_exp_train, np_exp_val
+        vgg_iter = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
+        x, y = vgg_iter.get_next()
+
+        train_init = vgg_iter.make_initializer(dataset_train)  # initializer for train_data
+        test_init = vgg_iter.make_initializer(dataset_val)
+        # return dataset_train, dataset_val, nb_exp_train, np_exp_val
+        return train_init, test_init, x, y
+
+if __name__ == '__main__':
+    vgg = VGGNet()
+    train_init, test_init, x, y = vgg.load_dataset(imgs_path='/srv/node/sdc1/image_data/img_val')
+    vgg.build(x, y)
+    vgg.train(train_init, test_init, n_epochs=1)
+
 
