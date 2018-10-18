@@ -102,7 +102,7 @@ class VGGNet(VGGBase):
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            step = self.gstep.eval()
+            step = self.global_step.eval()
             for epoch in range(n_epochs):
                 step = self.train_one_epoch(sess, train_init, writer, epoch, step)
                 self.evaluation(sess, test_init, writer, epoch, step)
