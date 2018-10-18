@@ -26,6 +26,22 @@ class VGGFace(VGGNet):
 
         return logits
 
+    def loss(self, labels, logits):
+        logits = tf.nn.sigmoid(logits)
+        loss = tf.losses.mean_squared_error(labels=labels, predictions=logits)
+        self.op_loss = tf.reduce_mean(loss, name='loss')
+
+    def eval(self, labels, logits):
+        '''
+        Count the number of right predictions in a batch
+        '''
+        with tf.name_scope('predict'):
+            preds = tf.nn.sigmoid(logits)
+            self.prediction = tf.reduce_sum(tf.cast(tf.equal(labels, tf.round(preds)), tf.float32), axis=1) / 40
+
+            self.accuracy = tf.reduce_sum(self.prediction)
+
+
     def celeba_output_layer(self, bottom, name):
         with tf.variable_scope(name):
             shape = bottom.get_shape().as_list()
