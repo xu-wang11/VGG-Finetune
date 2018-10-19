@@ -23,16 +23,31 @@ class VggMultiTask(VGGBase):
         self.accuracy = None
         self.preds = None
 
+    def inference(self, x):
+        print("start to build model...")
+        self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
+        output = self.conv_layers(x[0])
+        output1 = self.conv_layers(x[1])
+        logits = self.fc_layers([output, output1])
+        return logits
+
     def fc_layers(self, input):
-        fc6 = self.fc_layer_like(input, "fc6")
-        assert fc6.get_shape().as_list()[1:] == [4096]
-        relu6 = tf.nn.relu(fc6)
+        fc6_0 = self.fc_layer_like(input[0], "fc6")
 
-        fc7 = self.fc_layer_like(relu6, "fc7")
-        relu7 = tf.nn.relu(fc7)
+        relu6_0 = tf.nn.relu(fc6_0)
 
-        tasks_imagenet = self.fc_layer_like(relu7, "fc8")
-        tasks_celeba = self.output_layer(relu7, "fc9", 40)
+        fc7_0 = self.fc_layer_like(relu6_0, "fc7")
+        relu7_0 = tf.nn.relu(fc7_0)
+
+        fc6_1 = self.fc_layer_like(input[1], "fc6")
+
+        relu6_1 = tf.nn.relu(fc6_1)
+
+        fc7_1 = self.fc_layer_like(relu6_1, "fc7")
+        relu7_1 = tf.nn.relu(fc7_1)
+
+        tasks_imagenet = self.fc_layer_like(relu7_0, "fc8")
+        tasks_celeba = self.output_layer(relu7_1, "fc9", 40)
 
         return [tasks_imagenet, tasks_celeba]
 
@@ -183,17 +198,9 @@ if __name__ == '__main__':
         attr_file='/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
         partition_file='/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt',
         cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
-    print(train_set_image_net.output_shapes)
-    print(train_set_celeba.output_shapes)
-    exit(0)
-    vgg_iter = tf.data.Iterator.from_structure(train_set_image_net.output_types, tf.TensorShape([None, None]))
-    x, y = vgg_iter.get_next()
 
-    train_init_image_net = vgg_iter.make_initializer(train_set_image_net)
-    test_init_image_net = vgg_iter.make_initializer(test_set_image_net)
-
-    train_init_celeba = vgg_iter.make_initializer(train_set_celeba)
-    test_init_celeba = vgg_iter.make_initializer(test_set_celeba)
+    train_init_image_net, test_init_image_net, x, y = utils.dataset_iterator(train_set_image_net, test_set_image_net)
+    train_init_celeba, test_init_celeba, x, y = utils.dataset_iterator(train_set_celeba, test_set_celeba)
 
     vgg.load_model('Weights_imageNet')
     vgg.build(x, y)
