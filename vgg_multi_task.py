@@ -199,11 +199,11 @@ if __name__ == '__main__':
         partition_file='/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt',
         cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
 
-    train_init_image_net, test_init_image_net, x, y = utils.dataset_iterator(train_set_image_net, test_set_image_net)
-    train_init_celeba, test_init_celeba, x, y = utils.dataset_iterator(train_set_celeba, test_set_celeba)
+    train_init_image_net, test_init_image_net, x_image_net, y_image_net = utils.dataset_iterator(train_set_image_net, test_set_image_net)
+    train_init_celeba, test_init_celeba, x_celeba, y_celeba = utils.dataset_iterator(train_set_celeba, test_set_celeba)
 
     vgg.load_model('Weights_imageNet')
-    vgg.build(x, y)
+    vgg.build([x_image_net, x_celeba], [y_image_net, y_celeba])
     vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=20)
 
 
