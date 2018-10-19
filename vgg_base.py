@@ -71,7 +71,7 @@ class VGGBase:
         return tf.nn.max_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
 
     def conv_layer(self, bottom, name):
-        with tf.variable_scope(name, reuse=True):
+        with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             filt = self.get_conv_filter(name)
 
             conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
@@ -83,7 +83,7 @@ class VGGBase:
             return relu
 
     def fc_layer(self, bottom, name):
-        with tf.variable_scope(name, reuse=True):
+        with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             shape = bottom.get_shape().as_list()
             dim = 1
             for d in shape[1:]:
@@ -98,7 +98,7 @@ class VGGBase:
             return fc
 
     def fc_layer_like(self, input, name):
-        with tf.variable_scope(name, reuse=True):
+        with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             shape = input.get_shape().as_list()
             dim = 1
             for d in shape[1:]:
@@ -115,7 +115,7 @@ class VGGBase:
 
     @staticmethod
     def output_layer(bottom, name, output_dim):
-        with tf.variable_scope(name, reuse=True):
+        with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             shape = bottom.get_shape().as_list()
             dim = 1
             for d in shape[1:]:
