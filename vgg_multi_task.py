@@ -174,18 +174,29 @@ class VggMultiTask(VGGBase):
 
 if __name__ == '__main__':
     vgg = VggMultiTask()
-    train_init_image_net, test_init_image_net, x_image_net, y_image_net = utils.load_image_net_dataset(
+    train_set_image_net, test_set_image_net = utils.load_image_net_dataset(
         imgs_path='/srv/node/sdc1/image_data/img_val', label_path='ILSVRC_labels.txt',
         cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
 
-    train_init_celeba, test_init_celeba, x_celeba, y_celeba = utils.load_face_dataset(
+    train_set_celeba, test_set_celeba = utils.load_face_dataset(
         imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba',
         attr_file='/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
         partition_file='/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt',
         cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
+    print(train_set_image_net.output_shapes)
+    print(train_set_celeba.output_shapes)
+    exit(0)
+    vgg_iter = tf.data.Iterator.from_structure(train_set_image_net.output_types, tf.TensorShape([None, None]))
+    x, y = vgg_iter.get_next()
+
+    train_init_image_net = vgg_iter.make_initializer(train_set_image_net)
+    test_init_image_net = vgg_iter.make_initializer(test_set_image_net)
+
+    train_init_celeba = vgg_iter.make_initializer(train_set_celeba)
+    test_init_celeba = vgg_iter.make_initializer(test_set_celeba)
 
     vgg.load_model('Weights_imageNet')
-    vgg.build(x_celeba, [y_image_net, y_celeba])
+    vgg.build(x, y)
     vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=20)
 
 

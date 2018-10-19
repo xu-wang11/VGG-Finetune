@@ -116,10 +116,11 @@ class VGGFace(VGGBase):
 
 if __name__ == '__main__':
     vgg = VGGFace()
-    train_init, test_init, x, y = utils.load_face_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba',
+    train_set, val_set = utils.load_face_dataset(imgs_path='/srv/node/sdc1/image_data/CelebA/Img/img_align_celeba',
                                                           attr_file='/srv/node/sdc1/image_data/CelebA/Anno/list_attr_celeba.txt',
                                                           partition_file='/srv/node/sdc1/image_data/CelebA/Eval/list_eval_partition.txt',
                                                           cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
+    train_init, test_init, x, y = utils.dataset_iterator(train_set, val_set)
     vgg.load_model(model_path='Weights_imageNet')
     vgg.build(x, y)
     vgg.train(train_init, test_init, n_epochs=20)

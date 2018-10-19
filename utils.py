@@ -100,13 +100,7 @@ def load_image_net_dataset(imgs_path, label_path, cpu_cores, batch_size):
     dataset_val = dataset_val.batch(batch_size)
     dataset_val = dataset_val.prefetch(buffer_size=1)
 
-    vgg_iter = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
-    x, y = vgg_iter.get_next()
-
-    train_init = vgg_iter.make_initializer(dataset_train)  # initializer for train_data
-    test_init = vgg_iter.make_initializer(dataset_val)
-    # return dataset_train, dataset_val, nb_exp_train, np_exp_val
-    return train_init, test_init, x, y
+    return dataset_train, dataset_val
 
 
 def parse_celeba_image(filename, label):
@@ -160,7 +154,10 @@ def load_face_dataset(imgs_path, attr_file, partition_file, cpu_cores, batch_siz
     dataset_val = dataset_val.map(map_func=parse_celeba_image, num_parallel_calls=cpu_cores)
     dataset_val = dataset_val.batch(batch_size)
     dataset_val = dataset_val.prefetch(buffer_size=1)
+    return dataset_train, dataset_val
 
+
+def dataset_iterator(dataset_train, dataset_val):
     vgg_iter = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     x, y = vgg_iter.get_next()
 
