@@ -177,13 +177,14 @@ class VggMultiTask(VGGBase):
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
+            self.save_model(sess, 'vgg_multi_before_train.data')
             step = self.global_step.eval()
             for epoch in range(n_epochs):
                 step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
                 self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
                 step = self.train_one_epoch_imagenet(sess, train_init_imagenet, writer, epoch, step)
                 self.evaluation_imagenet(sess, test_init_imagenet, writer, epoch, step)
-
+            self.save_model(sess, 'vgg_multi_before_train.data')
         writer.close()
 
 
