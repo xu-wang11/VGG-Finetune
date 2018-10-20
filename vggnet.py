@@ -101,11 +101,13 @@ class VGGNet(VGGBase):
         writer = tf.summary.FileWriter('graphs/vgg_net', tf.get_default_graph())
 
         with tf.Session() as sess:
+            self.save_model(sess, 'vgg_net_before_train.data')
             sess.run(tf.global_variables_initializer())
             step = self.global_step.eval()
             for epoch in range(n_epochs):
                 step = self.train_one_epoch(sess, train_init, writer, epoch, step)
                 self.evaluation(sess, test_init, writer, epoch, step)
+            self.save_model(sess, 'vgg_net_final_train.data')
         writer.close()
 
 
