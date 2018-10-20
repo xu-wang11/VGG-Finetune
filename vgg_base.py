@@ -22,9 +22,16 @@ class VGGBase:
     def save_model(self, sess, save_path):
         tvars = tf.trainable_variables()
         tvars_vals = sess.run(tvars)
-
+        weight_dict = {}
+        bias_dict = {}
         for var, val in zip(tvars, tvars_vals):
-            print(var.name)  # Prints the name of the variable alongside its value.
+            layer_name = var.name.split('/')[0]
+            if 'weight' in var.name:
+                weight_dict[layer_name] = val
+            if 'bias' in var.name:
+                bias_dict[layer_name] = val
+
+        pickle.dump((weight_dict, bias_dict), open(save_path, 'wb'))
 
 
     def inference(self, x):
