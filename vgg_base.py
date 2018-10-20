@@ -33,7 +33,6 @@ class VGGBase:
 
         pickle.dump((weight_dict, bias_dict), open(save_path, 'wb'))
 
-
     def inference(self, x):
         print("start to build model...")
         self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
