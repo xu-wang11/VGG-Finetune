@@ -19,8 +19,13 @@ class VGGBase:
         print("loading model from {0}".format(model_path))
         self.weight_dict, self.bias_dict = pickle.load(open(model_path, 'rb'))
 
-    def save_model(self, save_path):
-        pass
+    def save_model(self, sess, save_path):
+        tvars = tf.trainable_variables()
+        tvars_vals = sess.run(tvars)
+
+        for var, val in zip(tvars, tvars_vals):
+            print(var.name)  # Prints the name of the variable alongside its value.
+
 
     def inference(self, x):
         print("start to build model...")
