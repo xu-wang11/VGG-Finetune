@@ -79,6 +79,7 @@ class VggMultiTask(VGGBase):
         with tf.name_scope('predict'):
             preds = tf.nn.softmax(logits[0])
             print(labels[0].shape)
+            print(logits[0].shape)
 
             prediction_imagenet = tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels[0], axis=1), k=5),
                                       dtype=tf.int32)

@@ -38,6 +38,8 @@ class VGGNet(VGGBase):
 
     def prediction(self, labels, logits):
         with tf.name_scope('predict'):
+            print(labels.shape)
+            print(logits.shape)
             predictions = tf.nn.softmax(logits)
             self.preds = tf.cast(tf.nn.in_top_k(predictions=predictions, targets=tf.argmax(labels, axis=1), k=5),
                                       dtype=tf.int32)
