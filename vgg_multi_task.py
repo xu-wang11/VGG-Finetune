@@ -21,7 +21,9 @@ class VggMultiTask(VGGBase):
         self.op_loss = None
         self.op_summary = None
         self.accuracy = None
-        self.preds = None
+        # self.preds = None
+        self.pred_imagenet = None
+        self.pred_celeba = None
 
     def inference(self, x):
         print("start to build model...")
@@ -93,7 +95,8 @@ class VggMultiTask(VGGBase):
 
             accuracy_celeba = tf.reduce_sum(prediction_celeba)
 
-            self.preds = [prediction_imagenet, prediction_celeba]
+            self.pred_imagenet = prediction_imagenet
+            self.pred_celeba = prediction_celeba
             self.accuracy = [accuracy_imagenet, accuracy_celeba]
 
     def summary(self):
@@ -129,10 +132,10 @@ class VggMultiTask(VGGBase):
         print("hell")
         try:
             while True:
-                prediction_batch = sess.run([self.preds[0]])
+                prediction_batch = sess.run([self.pred_imagenet])
                 prediction_batch = np.array(prediction_batch)
                 total_correct_preds += np.sum(prediction_batch)
-                total_samples += prediction_batch.shape[1]
+                total_samples += prediction_batch.shape[0]
                 print(total_correct_preds)
                 print(total_samples)
                 print(prediction_batch.shape)
@@ -170,10 +173,11 @@ class VggMultiTask(VGGBase):
         total_samples = 0
         try:
             while True:
-                prediction_batch = sess.run([self.preds[1]])
+                prediction_batch = sess.run([self.pred_celeba])
                 prediction_batch = np.array(prediction_batch)
                 total_correct_preds += prediction_batch.sum()
-                total_samples += prediction_batch.shape[1]
+                total_samples += prediction_batch.shape[0]
+                print(prediction_batch.shape)
         except tf.errors.OutOfRangeError:
             pass
 
