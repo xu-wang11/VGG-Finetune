@@ -123,6 +123,7 @@ class VggMultiTask(VGGBase):
         sess.run(init)
         total_correct_preds = 0
         total_samples = 0
+        print("hell")
         try:
             while True:
                 prediction_batch = sess.run([self.preds[0]])
