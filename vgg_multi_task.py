@@ -83,6 +83,7 @@ class VggMultiTask(VGGBase):
 
             prediction_imagenet = tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels[0], axis=1), k=5),
                                       dtype=tf.int32)
+            print(prediction_imagenet.shape)
             accuracy_imagenet = tf.reduce_sum(
                 tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels[0], axis=1), k=5),
                         dtype=tf.int32))

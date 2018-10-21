@@ -43,6 +43,7 @@ class VGGNet(VGGBase):
             predictions = tf.nn.softmax(logits)
             self.preds = tf.cast(tf.nn.in_top_k(predictions=predictions, targets=tf.argmax(labels, axis=1), k=5),
                                       dtype=tf.int32)
+            print(self.preds.shape)
             self.accuracy = tf.reduce_mean(
                 tf.cast(tf.nn.in_top_k(predictions=predictions, targets=tf.argmax(labels, axis=1), k=5),
                         dtype=tf.int32))
