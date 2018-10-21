@@ -129,7 +129,7 @@ class VggMultiTask(VGGBase):
                 prediction_batch = sess.run([self.preds[0]])
                 prediction_batch = np.array(prediction_batch)
                 total_correct_preds += np.sum(prediction_batch)
-                total_samples += prediction_batch.shape[0]
+                total_samples += prediction_batch.shape[1]
                 print(prediction_batch.shape)
 
         except tf.errors.OutOfRangeError:
@@ -168,7 +168,7 @@ class VggMultiTask(VGGBase):
                 prediction_batch = sess.run([self.preds[1]])
                 prediction_batch = np.array(prediction_batch)
                 total_correct_preds += prediction_batch.sum()
-                total_samples += prediction_batch.shape[0]
+                total_samples += prediction_batch.shape[1]
         except tf.errors.OutOfRangeError:
             pass
 

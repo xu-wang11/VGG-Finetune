@@ -90,7 +90,7 @@ class VGGNet(VGGBase):
                 batch_prediction = np.array(batch_prediction)
                 writer.add_summary(summaries, global_step=step)
                 total_correct_preds += batch_prediction.sum()
-                total_samples += batch_prediction.shape[0]
+                total_samples += batch_prediction.shape[1]
         except tf.errors.OutOfRangeError:
             pass
 
