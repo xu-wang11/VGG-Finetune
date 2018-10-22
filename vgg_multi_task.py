@@ -34,27 +34,27 @@ class VggMultiTask(VGGBase):
         return logits
 
     def fc_layers(self, input):
-        fc6_0 = self.fc_layer_like(input[0], "fc6")
+        fc6_0 = self.fc_layer(input[0], "fc6")
 
         relu6_0 = tf.nn.relu(fc6_0)
 
-        fc7_0 = self.fc_layer_like(relu6_0, "fc7")
+        fc7_0 = self.fc_layer(relu6_0, "fc7")
         relu7_0 = tf.nn.relu(fc7_0)
 
-        fc6_1 = self.fc_layer_like(input[1], "fc6")
+        fc6_1 = self.fc_layer(input[1], "fc6")
 
         relu6_1 = tf.nn.relu(fc6_1)
 
-        fc7_1 = self.fc_layer_like(relu6_1, "fc7")
+        fc7_1 = self.fc_layer(relu6_1, "fc7")
         relu7_1 = tf.nn.relu(fc7_1)
 
-        tasks_imagenet = self.fc_layer_like(relu7_0, "fc8")
+        tasks_imagenet = self.fc_layer(relu7_0, "fc8")
         tasks_celeba = self.output_layer(relu7_1, "fc9", 40)
 
         return [tasks_imagenet, tasks_celeba]
 
     def trainable_variables(self):
-        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
+        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8")]
         return var_list
 
     def loss(self, labels, logits):
@@ -134,11 +134,7 @@ class VggMultiTask(VGGBase):
                 prediction_batch = sess.run([self.pred_imagenet])
                 prediction_batch = np.array(prediction_batch)
                 total_correct_preds += np.sum(prediction_batch)
-                total_samples += prediction_batch.shape[0]
-                print(total_correct_preds)
-                print(total_samples)
-                print(prediction_batch.shape)
-
+                total_samples += prediction_batch.shape[1]
         except tf.errors.OutOfRangeError:
             pass
 
