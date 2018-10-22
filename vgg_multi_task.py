@@ -54,7 +54,7 @@ class VggMultiTask(VGGBase):
         return [tasks_imagenet, tasks_celeba]
 
     def trainable_variables(self):
-        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8")]
+        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc8") or v.name.startswith("fc9")]
         return var_list
 
     def loss(self, labels, logits):
