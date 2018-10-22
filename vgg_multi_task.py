@@ -70,10 +70,10 @@ class VggMultiTask(VGGBase):
     def optimize(self):
 
         var_list = self.trainable_variables()
-        op_opt_imagenet = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(
+        op_opt_imagenet = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
             self.op_loss[0], var_list=var_list, global_step=self.global_step)
 
-        op_opt_celeba = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(
+        op_opt_celeba = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(
             self.op_loss[1], var_list=var_list, global_step=self.global_step)
         self.op_opt = [op_opt_imagenet, op_opt_celeba]
 
