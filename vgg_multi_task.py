@@ -48,7 +48,7 @@ class VggMultiTask(VGGBase):
         fc7_1 = self.fc_layer(relu6_1, "fc7")
         relu7_1 = tf.nn.relu(fc7_1)
 
-        tasks_imagenet = self.fc_layer_like(relu7_0, "fc8")
+        tasks_imagenet = self.fc_layer(relu7_0, "fc8")
         tasks_celeba = self.output_layer(relu7_1, "fc9", 40)
 
         return [tasks_imagenet, tasks_celeba]
