@@ -193,7 +193,7 @@ class VggMultiTask(VGGBase):
                 step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
                 self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
 
-            self.save_model(sess, 'vgg_multi_before_train.data')
+            self.save_model(sess, 'vgg_multi_after_train.data')
         writer.close()
 
 
