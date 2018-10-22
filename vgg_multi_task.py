@@ -34,18 +34,18 @@ class VggMultiTask(VGGBase):
         return logits
 
     def fc_layers(self, input):
-        fc6_0 = self.fc_layer_like(input[0], "fc6")
+        fc6_0 = self.fc_layer(input[0], "fc6")
 
         relu6_0 = tf.nn.relu(fc6_0)
 
-        fc7_0 = self.fc_layer_like(relu6_0, "fc7")
+        fc7_0 = self.fc_layer(relu6_0, "fc7")
         relu7_0 = tf.nn.relu(fc7_0)
 
-        fc6_1 = self.fc_layer_like(input[1], "fc6")
+        fc6_1 = self.fc_layer(input[1], "fc6")
 
         relu6_1 = tf.nn.relu(fc6_1)
 
-        fc7_1 = self.fc_layer_like(relu6_1, "fc7")
+        fc7_1 = self.fc_layer(relu6_1, "fc7")
         relu7_1 = tf.nn.relu(fc7_1)
 
         tasks_imagenet = self.fc_layer_like(relu7_0, "fc8")
