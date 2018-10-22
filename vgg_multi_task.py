@@ -15,7 +15,7 @@ class VggMultiTask(VGGBase):
         self.batch_size = 64
         self.cpu_cores = 8
         self.skip_step = 100
-        self.lr = 0.01
+        self.lr = 0.001
 
         self.op_opt = None
         self.op_loss = None
