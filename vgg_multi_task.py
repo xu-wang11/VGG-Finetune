@@ -48,7 +48,7 @@ class VggMultiTask(VGGBase):
         fc7_1 = self.fc_layer(relu6_1, "fc7")
         relu7_1 = tf.nn.relu(fc7_1)
 
-        tasks_imagenet = self.fc_layer(relu7_0, "fc8")
+        tasks_imagenet = self.fc_layer_like(relu7_0, "fc8")
         tasks_celeba = self.output_layer(relu7_1, "fc9", 40)
 
         return [tasks_imagenet, tasks_celeba]
@@ -214,7 +214,7 @@ if __name__ == '__main__':
 
     vgg.load_model('Weights_imageNet')
     vgg.build([x_image_net, x_celeba], [y_image_net, y_celeba])
-    vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=20)
+    vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=3)
 
 
 

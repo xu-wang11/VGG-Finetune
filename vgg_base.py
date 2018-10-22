@@ -4,6 +4,7 @@
 import pickle
 import tensorflow as tf
 from abc import abstractmethod
+import math
 
 class VGGBase:
     """
@@ -115,7 +116,7 @@ class VGGBase:
             for d in shape[1:]:
                 dim *= d
             x = tf.reshape(input, [-1, dim])
-            initial = tf.truncated_normal_initializer(0, 0.1)
+            initial = tf.truncated_normal_initializer(0, 1/math.sqrt(dim))
             weights = tf.get_variable('weights', self.weight_dict[name].shape, tf.float32, initializer=initial)
             biases = tf.get_variable('biases', self.bias_dict[name].shape, tf.float32,
                                      initializer=tf.constant_initializer(0.1))
