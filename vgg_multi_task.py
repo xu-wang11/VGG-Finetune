@@ -54,8 +54,8 @@ class VggMultiTask(VGGBase):
         return [tasks_imagenet, tasks_celeba]
 
     def trainable_variables(self):
-        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
-        return var_list
+        # var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
+        return tf.trainable_variables()
 
     def loss(self, labels, logits):
 
@@ -172,7 +172,7 @@ class VggMultiTask(VGGBase):
                 prediction_batch = sess.run([self.pred_celeba])
                 prediction_batch = np.array(prediction_batch)
                 total_correct_preds += prediction_batch.sum()
-                total_samples += prediction_batch.shape[0]
+                total_samples += prediction_batch.shape[1]
                 print(prediction_batch.shape)
         except tf.errors.OutOfRangeError:
             pass
@@ -190,8 +190,8 @@ class VggMultiTask(VGGBase):
             for epoch in range(n_epochs):
                 step = self.train_one_epoch_imagenet(sess, train_init_imagenet, writer, epoch, step)
                 self.evaluation_imagenet(sess, test_init_imagenet, writer, epoch, step)
-                # step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
-                # self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
+                step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
+                self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
 
             self.save_model(sess, 'vgg_multi_before_train.data')
         writer.close()
