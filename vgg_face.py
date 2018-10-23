@@ -113,7 +113,7 @@ class VGGFace(VGGBase):
             for epoch in range(n_epochs):
                 self.evaluation(sess, test_init, writer, epoch, step)
                 step = self.train_one_epoch(sess, train_init, writer, epoch, step)
-                self.evaluation(sess, test_init, writer, epoch, step)
+                # self.evaluation(sess, test_init, writer, epoch, step)
             self.save_model(sess, 'vgg_face_after_train.data')
         writer.close()
 
