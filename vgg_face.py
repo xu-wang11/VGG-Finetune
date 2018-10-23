@@ -93,10 +93,10 @@ class VGGFace(VGGBase):
             while True:
                 batch_prediction, summaries = sess.run([self.preds, self.op_summary])
                 batch_prediction = np.array(batch_prediction)
-                print(batch_prediction)
-                exit(0)
+
                 writer.add_summary(summaries, global_step=step)
-                total_correct_preds += batch_prediction.sum()
+                total_correct_preds += np.sum(batch_prediction)
+                total_samples += batch_prediction.shape[0]
         except tf.errors.OutOfRangeError:
             pass
 
