@@ -48,7 +48,7 @@ class VggMultiTask(VGGBase):
         fc7_1 = self.fc_layer(relu6_1, "fc7")
         relu7_1 = tf.nn.relu(fc7_1)
 
-        tasks_imagenet = self.fc_layer_like(relu7_0, "fc8")
+        tasks_imagenet = self.fc_layer(relu7_0, "fc8")
         tasks_celeba = self.output_layer(relu7_1, "fc9", 40)
 
         return [tasks_imagenet, tasks_celeba]
@@ -80,12 +80,12 @@ class VggMultiTask(VGGBase):
     def prediction(self, labels, logits):
         with tf.name_scope('predict'):
             preds = tf.nn.softmax(logits[0])
-            print(labels[0].shape)
-            print(logits[0].shape)
+            # print(labels[0].shape)
+            # print(logits[0].shape)
 
             prediction_imagenet = tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels[0], axis=1), k=5),
                                       dtype=tf.int32)
-            print(prediction_imagenet.shape)
+            # print(prediction_imagenet.shape)
             accuracy_imagenet = tf.reduce_sum(
                 tf.cast(tf.nn.in_top_k(predictions=preds, targets=tf.argmax(labels[0], axis=1), k=5),
                         dtype=tf.int32))
@@ -129,7 +129,7 @@ class VggMultiTask(VGGBase):
         sess.run(init)
         total_correct_preds = 0
         total_samples = 0
-        print("hell")
+        # print("hell")
         try:
             while True:
                 prediction_batch = sess.run([self.pred_imagenet])
@@ -173,7 +173,7 @@ class VggMultiTask(VGGBase):
                 prediction_batch = np.array(prediction_batch)
                 total_correct_preds += prediction_batch.sum()
                 total_samples += prediction_batch.shape[1]
-                print(prediction_batch.shape)
+                # print(prediction_batch.shape)
         except tf.errors.OutOfRangeError:
             pass
 
@@ -188,9 +188,12 @@ class VggMultiTask(VGGBase):
             self.save_model(sess, 'vgg_multi_before_train.data')
             step = self.global_step.eval()
             for epoch in range(n_epochs):
+                step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
+                self.evaluation_imagenet(sess, test_init_imagenet, writer, epoch, step)
+                self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
+
                 step = self.train_one_epoch_imagenet(sess, train_init_imagenet, writer, epoch, step)
                 self.evaluation_imagenet(sess, test_init_imagenet, writer, epoch, step)
-                step = self.train_one_epoch_celeba(sess, train_init_celeba, writer, epoch, step)
                 self.evaluation_celeba(sess, test_init_celeba, writer, epoch, step)
 
             self.save_model(sess, 'vgg_multi_after_train.data')
