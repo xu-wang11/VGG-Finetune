@@ -93,6 +93,8 @@ class VGGFace(VGGBase):
             while True:
                 batch_prediction, summaries = sess.run([self.preds, self.op_summary])
                 batch_prediction = np.array(batch_prediction)
+                print(batch_prediction)
+                exit(0)
                 writer.add_summary(summaries, global_step=step)
                 total_correct_preds += batch_prediction.sum()
         except tf.errors.OutOfRangeError:
@@ -109,6 +111,7 @@ class VGGFace(VGGBase):
             self.save_model(sess, 'vgg_face_after_train.data')
             step = self.global_step.eval()
             for epoch in range(n_epochs):
+                self.evaluation(sess, test_init, writer, epoch, step)
                 step = self.train_one_epoch(sess, train_init, writer, epoch, step)
                 self.evaluation(sess, test_init, writer, epoch, step)
             self.save_model(sess, 'vgg_face_after_train.data')
