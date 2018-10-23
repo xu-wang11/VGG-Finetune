@@ -95,6 +95,7 @@ class VGGFace(VGGBase):
                 batch_prediction = np.array(batch_prediction)
                 writer.add_summary(summaries, global_step=step)
                 total_correct_preds += batch_prediction.sum()
+                total_samples = batch_prediction.shape[0]
         except tf.errors.OutOfRangeError:
             pass
 
