@@ -216,7 +216,7 @@ class VggMultiTask(VGGBase):
 
 
 if __name__ == '__main__':
-    vgg = VggMultiTask()
+    vgg = VggMultiTask(is_from_vgg_weight=False)
     train_set_image_net, test_set_image_net = utils.load_image_net_dataset(
         imgs_path='/srv/node/sdc1/image_data/img_val', label_path='ILSVRC_labels.txt',
         cpu_cores=vgg.cpu_cores, batch_size=vgg.batch_size)
