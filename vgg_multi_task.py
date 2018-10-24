@@ -10,12 +10,13 @@ import utils
 
 class VggMultiTask(VGGBase):
 
-    def __init__(self):
+    def __init__(self, is_from_vgg_weight=True):
         super().__init__()
         self.batch_size = 64
         self.cpu_cores = 8
         self.skip_step = 100
         self.lr = 0.0001
+        self.is_from_vgg_weight = is_from_vgg_weight
 
         self.op_opt = None
         self.op_loss = None
@@ -49,7 +50,10 @@ class VggMultiTask(VGGBase):
         relu7_1 = tf.nn.relu(fc7_1)
 
         tasks_imagenet = self.fc_layer(relu7_0, "fc8")
-        tasks_celeba = self.output_layer(relu7_1, "fc9", 40)
+        if self.is_from_vgg_weight:
+            tasks_celeba = self.output_layer(relu7_1, "fc9", 40)
+        else:
+            tasks_celeba = self.fc_layer(relu7_1, "fc9")
 
         return [tasks_imagenet, tasks_celeba]
 
@@ -199,6 +203,17 @@ class VggMultiTask(VGGBase):
             self.save_model(sess, 'vgg_multi_after_train.data')
         writer.close()
 
+    def evaluation(self, test_init_imagenet, test_init_celeba):
+        writer = tf.summary.FileWriter('graphs/multitask', tf.get_default_graph())
+
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            self.save_model(sess, 'vgg_multi_before_train.data')
+            step = self.global_step.eval()
+            self.evaluation_imagenet(sess, test_init_imagenet, writer, 0, step)
+            self.evaluation_celeba(sess, test_init_celeba, writer, 0, step)
+        writer.close()
+
 
 if __name__ == '__main__':
     vgg = VggMultiTask()
@@ -215,9 +230,14 @@ if __name__ == '__main__':
     train_init_image_net, test_init_image_net, x_image_net, y_image_net = utils.dataset_iterator(train_set_image_net, test_set_image_net)
     train_init_celeba, test_init_celeba, x_celeba, y_celeba = utils.dataset_iterator(train_set_celeba, test_set_celeba)
 
-    vgg.load_model('Weights_imageNet')
+    # vgg.load_model('Weights_imageNet')
+    # vgg.build([x_image_net, x_celeba], [y_image_net, y_celeba])
+    # vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=3)
+
+    vgg.load_model('vgg_result/20181023/vgg_multi_after_train.data')
     vgg.build([x_image_net, x_celeba], [y_image_net, y_celeba])
-    vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=3)
+    vgg.evaluation(test_init_image_net, test_init_celeba)
+    # vgg.train(train_init_image_net, test_init_image_net, train_init_celeba, test_init_celeba, n_epochs=3)
 
 
 
