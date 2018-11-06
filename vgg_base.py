@@ -86,6 +86,9 @@ class VGGBase:
         with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             filt = self.get_conv_filter(name)
 
+            if name == 'conv1_1':
+                filt = filt[:, :, 1:2, :]
+
             conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
 
             conv_biases = self.get_bias(name)
