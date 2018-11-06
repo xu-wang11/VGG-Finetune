@@ -161,15 +161,16 @@ class AudioEmotion(VGGBase):
                     X_batch = train_data[iteration * batch_size:iteration * batch_size + batch_size, :, :]
                     y_batch = label_data[iteration * batch_size:iteration * batch_size + batch_size]
                     sess.run(self.op_opt, feed_dict={self.x: X_batch, self.y: y_batch})
-                n = sess.run(self.preds, feed_dict={self.x: train_data, self.y: label_data})
-                true_num = np.sum(n)
-                sample_num = train_data.shape[0]
-                print("training data: " + str(true_num * 1.0 / sample_num))
+                for iteration in range(test_data.shape[0] // batch_size):
+                    X_batch = test_data[iteration * batch_size:iteration * batch_size + batch_size, :, :]
+                    y_batch = test_label[iteration * batch_size:iteration * batch_size + batch_size]
 
-                n = sess.run(self.preds, feed_dict={self.x: test_data, self.y: test_label})
-                true_num = np.sum(n)
-                sample_num = test_data.shape[0]
-                print("validate data: " + str(true_num * 1.0 / sample_num))
+                    n = sess.run(self.preds, feed_dict={self.x: X_batch, self.y: y_batch})
+                    true_num += np.sum(n)
+                    sample_num += train_data.shape[0]
+                print("Validating data: " + str(true_num * 1.0 / sample_num))
+
+
             self.save_model(sess, 'vgg_net_final_train.data')
         writer.close()
 
