@@ -87,7 +87,7 @@ class VGGBase:
             filt = self.get_conv_filter(name)
 
             if name == 'conv1_1':
-                filt = filt[:, :, 1:2, :]
+                filt = filt[:, :, 0:1, :]
 
             conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
 

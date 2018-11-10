@@ -84,10 +84,10 @@ class AudioEmotion(VGGBase):
     def __init__(self):
         super().__init__()
 
-        self.batch_size = 64
+        self.batch_size = 128
         self.cpu_cores = 8
         self.skip_step = 100
-        self.lr = 0.0001
+        self.lr = 0.01
 
         self.op_opt = None
         self.op_loss = None
@@ -106,7 +106,7 @@ class AudioEmotion(VGGBase):
         fc7 = self.fc_layer(relu6, "fc7")
         relu7 = tf.nn.relu(fc7)
 
-        logits = self.output_layer(relu7, "fc8", 7)
+        logits = self.fc_layer(relu7, "fc8")
 
         return logits
 
@@ -116,11 +116,11 @@ class AudioEmotion(VGGBase):
 
     def optimize(self):
         var_list = self.trainable_variables()
-        self.op_opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.op_loss,
-                                                                                        global_step=self.global_step)
+        self.op_opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.op_loss, var_list=self.trainable_variables(), global_step=self.global_step)
 
     def trainable_variables(self):
-        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
+        # var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
+        var_list = [v for v in tf.trainable_variables()]
         return var_list
 
     def prediction(self, labels, logits):
@@ -148,7 +148,9 @@ class AudioEmotion(VGGBase):
         writer = tf.summary.FileWriter('graphs/vgg_net', tf.get_default_graph())
         num_examples = train_data.shape[0]
         batch_size = self.batch_size
-        with tf.Session() as sess:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth=True
+        with tf.Session(config=config) as sess:
 
             sess.run(tf.global_variables_initializer())
             self.save_model(sess, 'vgg_net_before_train.data')
@@ -167,7 +169,7 @@ class AudioEmotion(VGGBase):
 
                     n = sess.run(self.preds, feed_dict={self.x: X_batch, self.y: y_batch})
                     true_num += np.sum(n)
-                    sample_num += train_data.shape[0]
+                    sample_num += X_batch.shape[0]
                 print("Validating data: " + str(true_num * 1.0 / sample_num))
 
 
@@ -197,7 +199,7 @@ if __name__ == '__main__':
         new_img = np.reshape(new_img, (224, 224, 1))
         resize_val_data.append(new_img)
     resize_val_data = np.array(resize_val_data)
-    vgg.load_model(model_path='Weights_imageNet')
+    vgg.load_model(model_path='vgg_result/audio_1.model')
     vgg.build(vgg.x, vgg.y)
 
     vgg.train(100, resize_train_data, train_label, resize_val_data, val_label)
