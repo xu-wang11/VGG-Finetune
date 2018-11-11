@@ -87,7 +87,7 @@ def build_model(train_data, label_data, val_data, val_label):
     # pool2 = avg_pool(conv2, 'pool2')
     #conv3 = conv_layer(pool2, 'conv3', (5, 5, 16, 16), (16,))
     # pool3 = avg_pool(conv3, 'pool3')
-    fc1 = fc_layer(x, 'fc1', 64)
+    fc1 = fc_layer(x, 'fc1', 512)
     fc1_dropout = tf.nn.dropout(tf.nn.relu(fc1), 0.5)
     fc2 = fc_layer(fc1_dropout, 'fc2', 7)
     entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=fc2)
