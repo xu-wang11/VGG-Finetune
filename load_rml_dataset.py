@@ -109,16 +109,18 @@ def build_model(train_data, label_data, val_data, val_label):
     x = tf.placeholder(tf.float32, shape=[None, 64, 64, 1], name='X')
     y = tf.placeholder(tf.float32, shape=[None, 6], name='Y')
     conv1 = conv_layer(x, 'conv1', (5, 5, 1, 16), (16,))
-    pool1 = avg_pool(conv1, 'pool1')
-    conv2 = conv_layer(pool1, 'conv2', (5, 5, 16, 32), (32,))
-    pool2 = avg_pool(conv2, 'pool2')
-    x = x + pool2
+    x = conv1
+    # pool1 = avg_pool(conv1, 'pool1')
+    conv2 = conv_layer(x, 'conv2', (5, 5, 16, 16), (16,))
+    conv3 = conv_layer(conv2, 'conv3', (5, 5, 16, 16), (16,))
+    # pool2 = avg_pool(conv2, 'pool2')
+    x = x + conv3
 
-    conv1 = conv_layer(x, 'conv3', (5, 5, 1, 16), (16,))
-    pool1 = avg_pool(conv1, 'pool3')
-    conv2 = conv_layer(pool1, 'conv4', (5, 5, 16, 32), (32,))
-    pool2 = avg_pool(conv2, 'pool4')
-    x = x + pool2
+    conv2 = conv_layer(x, 'conv4', (5, 5, 16, 16), (16,))
+    conv3 = conv_layer(conv2, 'conv5', (5, 5, 16, 16), (16,))
+    # pool2 = avg_pool(conv2, 'pool2')
+    x = x + conv3
+
 
     # conv3 = conv_layer(pool2, 'conv3', (5, 5, 16, 16), (16,))
     # pool3 = avg_pool(conv3, 'pool3')
