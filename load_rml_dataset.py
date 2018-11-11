@@ -109,22 +109,22 @@ def build_model(train_data, label_data, val_data, val_label):
     x = tf.placeholder(tf.float32, shape=[None, 64, 64, 1], name='X')
     y = tf.placeholder(tf.float32, shape=[None, 6], name='Y')
     conv1 = conv_layer(x, 'conv1', (5, 5, 1, 16), (16,))
-    x = conv1
+    x1 = conv1
     # pool1 = avg_pool(conv1, 'pool1')
-    conv2 = conv_layer(x, 'conv2', (5, 5, 16, 16), (16,))
+    conv2 = conv_layer(x1, 'conv2', (5, 5, 16, 16), (16,))
     conv3 = conv_layer(conv2, 'conv3', (5, 5, 16, 16), (16,))
     # pool2 = avg_pool(conv2, 'pool2')
-    x = x + conv3
+    x2 = x1 + conv3
 
-    conv2 = conv_layer(x, 'conv4', (5, 5, 16, 16), (16,))
-    conv3 = conv_layer(conv2, 'conv5', (5, 5, 16, 16), (16,))
+    # conv2 = conv_layer(x2, 'conv4', (5, 5, 16, 16), (16,))
+    # conv3 = conv_layer(conv2, 'conv5', (5, 5, 16, 16), (16,))
     # pool2 = avg_pool(conv2, 'pool2')
-    x = x + conv3
+    # x3 = x2 + conv3
 
 
     # conv3 = conv_layer(pool2, 'conv3', (5, 5, 16, 16), (16,))
     # pool3 = avg_pool(conv3, 'pool3')
-    fc1 = fc_layer(x, 'fc1', 64)
+    fc1 = fc_layer(x2, 'fc1', 64)
     fc1_dropout = tf.nn.dropout(tf.nn.relu(fc1), 0.5)
     fc2 = fc_layer(fc1_dropout, 'fc2', 6)
     entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=fc2)
