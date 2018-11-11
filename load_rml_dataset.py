@@ -145,15 +145,14 @@ def build_model(train_data, label_data, val_data, val_label):
                 X_batch = train_data[iteration * batch_size:iteration * batch_size + batch_size, :, :]
                 y_batch = label_data[iteration * batch_size:iteration * batch_size + batch_size]
                 sess.run(op_opt, feed_dict={x: X_batch, y: y_batch})
-            n = sess.run(correct_prediction, feed_dict={x: train_data, y: label_data})
-            true_num = np.sum(n)
-            sample_num = train_data.shape[0]
-            print("training data: " + str(true_num * 1.0 / sample_num))
+            for iteration in range(test_data.shape[0] // batch_size):
+                X_batch = test_data[iteration * batch_size:iteration * batch_size + batch_size, :, :]
+                y_batch = test_label[iteration * batch_size:iteration * batch_size + batch_size]
 
-            n = sess.run(correct_prediction, feed_dict={x: val_data, y: val_label})
-            true_num = np.sum(n)
-            sample_num = val_data.shape[0]
-            print("validate data: " + str(true_num * 1.0 / sample_num))
+                n = sess.run(correct_prediction, feed_dict={x: X_batch, y: y_batch})
+                true_num += np.sum(n)
+                sample_num += X_batch.shape[0]
+            print("Validating data: " + str(true_num * 1.0 / sample_num))
 
 
 if __name__ == '__main__':
