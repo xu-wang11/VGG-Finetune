@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Created by wangxu on 2018/11/
-from vgg_base import VGGBase
+from VGG.vgg_base import VGGBase
 import numpy as np
 import os
 import librosa
@@ -171,8 +171,6 @@ class AudioEmotion(VGGBase):
                     true_num += np.sum(n)
                     sample_num += X_batch.shape[0]
                 print("Validating data: " + str(true_num * 1.0 / sample_num))
-
-
             self.save_model(sess, 'vgg_net_final_train.data')
         writer.close()
 
