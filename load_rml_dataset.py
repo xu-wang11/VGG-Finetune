@@ -112,9 +112,17 @@ def build_model(train_data, label_data, val_data, val_label):
     pool1 = avg_pool(conv1, 'pool1')
     conv2 = conv_layer(pool1, 'conv2', (5, 5, 16, 32), (32,))
     pool2 = avg_pool(conv2, 'pool2')
+    x = x + pool2
+
+    conv1 = conv_layer(x, 'conv3', (5, 5, 1, 16), (16,))
+    pool1 = avg_pool(conv1, 'pool3')
+    conv2 = conv_layer(pool1, 'conv4', (5, 5, 16, 32), (32,))
+    pool2 = avg_pool(conv2, 'pool4')
+    x = x + pool2
+
     # conv3 = conv_layer(pool2, 'conv3', (5, 5, 16, 16), (16,))
     # pool3 = avg_pool(conv3, 'pool3')
-    fc1 = fc_layer(pool2, 'fc1', 64)
+    fc1 = fc_layer(x, 'fc1', 64)
     fc1_dropout = tf.nn.dropout(tf.nn.relu(fc1), 0.5)
     fc2 = fc_layer(fc1_dropout, 'fc2', 6)
     entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=fc2)
