@@ -84,7 +84,7 @@ class AudioEmotion(VGGBase):
     def __init__(self):
         super().__init__()
 
-        self.batch_size = 128
+        self.batch_size = 64
         self.cpu_cores = 8
         self.skip_step = 100
         self.lr = 0.01
@@ -95,7 +95,7 @@ class AudioEmotion(VGGBase):
         self.accuracy = None
         self.preds = None
         self.x = tf.placeholder(tf.float32, shape=[None, 224, 224, 1], name='X')
-        self.y = tf.placeholder(tf.float32, shape=[None, 7], name='Y')
+        self.y = tf.placeholder(tf.float32, shape=[None, 6], name='Y')
 
     # override fc layer for CelebA dataset
     def fc_layers(self, input):
@@ -106,7 +106,7 @@ class AudioEmotion(VGGBase):
         fc7 = self.fc_layer(relu6, "fc7")
         relu7 = tf.nn.relu(fc7)
 
-        logits = self.fc_layer(relu7, "fc8")
+        logits = self.output_layer(relu7, "fc8", 6)
 
         return logits
 
@@ -119,8 +119,8 @@ class AudioEmotion(VGGBase):
         self.op_opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr).minimize(self.op_loss, var_list=self.trainable_variables(), global_step=self.global_step)
 
     def trainable_variables(self):
-        # var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
-        var_list = [v for v in tf.trainable_variables()]
+        var_list = [v for v in tf.trainable_variables() if v.name.startswith("fc")]
+        # var_list = [v for v in tf.trainable_variables()]
         return var_list
 
     def prediction(self, labels, logits):
