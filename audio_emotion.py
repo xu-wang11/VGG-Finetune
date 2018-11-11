@@ -31,55 +31,55 @@ class AudioEmotion(VGGBase):
             features.append(np.reshape(static_feature, [64, 64, 1]))
         return features
 
-    def audio_dataset(self):
-        train_root = "/srv/node/sdc1/Train_AFEW"
-        emotions = ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
-        emotion_labels = np.identity(7)
-        # for emotion in emotions:
-        #     extract_audio(os.path.join(train_root, emotion), os.path.join(train_root, emotion + '_audio'), os.path.join(train_root, emotion + '_jpg'))
-        train_data = []
-        train_label = []
-        for i in range(len(emotions)):
-            emotion = emotions[i]
-            audio_dir = os.path.join(train_root, emotion + '_audio')
-            for fname in os.listdir(audio_dir):
-                features = np.array(self.audio_feature(os.path.join(audio_dir, fname)))
-                labels = []
-                for j in range(features.shape[0]):
-                    labels.append(emotion_labels[i])
-                for f in features:
-                    train_data.append(f)
-                for l in labels:
-                    train_label.append(l)
-        min_val = np.min(train_data)
-        max_val = np.max(train_data)
-        train_data = (train_data - min_val) / (max_val - min_val)
-        train_label = np.array(train_label)
-        # shuffle(train_data, train_label)
-
-        val_root = "/srv/node/sdc1/Val_AFEW"
-        # emotions = ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
-        # emotion_labels = np.identity(7)
-        # for emotion in emotions:
-        #     extract_audio(os.path.join(train_root, emotion), os.path.join(train_root, emotion + '_audio'), os.path.join(train_root, emotion + '_jpg'))
-        val_data = []
-        val_label = []
-        for i in range(len(emotions)):
-            emotion = emotions[i]
-            audio_dir = os.path.join(val_root, emotion + '_audio')
-            for fname in os.listdir(audio_dir):
-                features = np.array(self.audio_feature(os.path.join(audio_dir, fname)))
-                labels = []
-                for j in range(features.shape[0]):
-                    labels.append(emotion_labels[i])
-                for f in features:
-                    val_data.append(f)
-                for l in labels:
-                    val_label.append(l)
-
-        val_data = (val_data - min_val) / (max_val - min_val)
-        val_label = np.array(val_label)
-        return train_data, train_label, val_data, val_label
+    # def audio_dataset(self):
+    #     train_root = "/srv/node/sdc1/Train_AFEW"
+    #     emotions = ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
+    #     emotion_labels = np.identity(7)
+    #     # for emotion in emotions:
+    #     #     extract_audio(os.path.join(train_root, emotion), os.path.join(train_root, emotion + '_audio'), os.path.join(train_root, emotion + '_jpg'))
+    #     train_data = []
+    #     train_label = []
+    #     for i in range(len(emotions)):
+    #         emotion = emotions[i]
+    #         audio_dir = os.path.join(train_root, emotion + '_audio')
+    #         for fname in os.listdir(audio_dir):
+    #             features = np.array(self.audio_feature(os.path.join(audio_dir, fname)))
+    #             labels = []
+    #             for j in range(features.shape[0]):
+    #                 labels.append(emotion_labels[i])
+    #             for f in features:
+    #                 train_data.append(f)
+    #             for l in labels:
+    #                 train_label.append(l)
+    #     min_val = np.min(train_data)
+    #     max_val = np.max(train_data)
+    #     train_data = (train_data - min_val) / (max_val - min_val)
+    #     train_label = np.array(train_label)
+    #     # shuffle(train_data, train_label)
+    #
+    #     val_root = "/srv/node/sdc1/Val_AFEW"
+    #     # emotions = ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
+    #     # emotion_labels = np.identity(7)
+    #     # for emotion in emotions:
+    #     #     extract_audio(os.path.join(train_root, emotion), os.path.join(train_root, emotion + '_audio'), os.path.join(train_root, emotion + '_jpg'))
+    #     val_data = []
+    #     val_label = []
+    #     for i in range(len(emotions)):
+    #         emotion = emotions[i]
+    #         audio_dir = os.path.join(val_root, emotion + '_audio')
+    #         for fname in os.listdir(audio_dir):
+    #             features = np.array(self.audio_feature(os.path.join(audio_dir, fname)))
+    #             labels = []
+    #             for j in range(features.shape[0]):
+    #                 labels.append(emotion_labels[i])
+    #             for f in features:
+    #                 val_data.append(f)
+    #             for l in labels:
+    #                 val_label.append(l)
+    #
+    #     val_data = (val_data - min_val) / (max_val - min_val)
+    #     val_label = np.array(val_label)
+    #     return train_data, train_label, val_data, val_label
 
     def __init__(self):
         super().__init__()
@@ -180,7 +180,20 @@ class AudioEmotion(VGGBase):
 if __name__ == '__main__':
     vgg = AudioEmotion()
 
-    train_data, train_label, val_data, val_label = vgg.audio_dataset()
+    # train_data, train_label, val_data, val_label = vgg.audio_dataset()
+
+    input = np.load('rml_audio_feature.npy')
+    output = np.load('rml_label.npy')
+    min_val = np.min(input)
+    max_val = np.max(input)
+    input = (input - min_val) / (max_val - min_val)
+    # ind = [i for i in range(input.shape[0])]
+    data_set = shuffle(input, output)
+    train_len = int(data_set[0].shape[0] * 0.7)
+    train_data = data_set[0][0:train_len]
+    train_label = data_set[1][0:train_len]
+    val_data = data_set[0][train_len:]
+    val_label = data_set[1][train_len:]
 
     resize_train_data = []
     for i in range(train_data.shape[0]):
@@ -199,7 +212,8 @@ if __name__ == '__main__':
         new_img = np.reshape(new_img, (224, 224, 1))
         resize_val_data.append(new_img)
     resize_val_data = np.array(resize_val_data)
-    vgg.load_model(model_path='vgg_result/audio_1.model')
+    # vgg.load_model(model_path='vgg_result/audio_1.model')
+    vgg.load_model('Weights_imageNet')
     vgg.build(vgg.x, vgg.y)
 
     vgg.train(100, resize_train_data, train_label, resize_val_data, val_label)
