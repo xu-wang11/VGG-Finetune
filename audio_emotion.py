@@ -5,7 +5,7 @@ from vgg_base import VGGBase
 import numpy as np
 import os
 import librosa
-from random import shuffle
+from sklearn.utils import shuffle
 import tensorflow as tf
 import time
 from scipy.misc import imresize
