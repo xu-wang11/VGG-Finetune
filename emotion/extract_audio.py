@@ -11,8 +11,6 @@ import random
 from sklearn.utils import shuffle
 
 
-
-
 def extract_audio(video_root, save_audio_root, save_jpg_root):
     for fname in os.listdir(video_root):
         full_path = os.path.join(video_root, fname)
@@ -125,7 +123,7 @@ def video_feature(video_path):
     pass
 
 if __name__ == '__main__':
-    train_root = "/srv/node/sdc1/Train_AFEW/"
+    train_root = "/Users/wangxu/Desktop/Train_AFEW/"
     emotions = ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
     emotion_labels = np.identity(7)
     # for emotion in emotions:
@@ -147,10 +145,11 @@ if __name__ == '__main__':
     min_val = np.min(train_data)
     max_val = np.max(train_data)
     train_data = (train_data - min_val) / (max_val - min_val)
-    ind = [i for i in range(train_data.shape[0])]
-    shuffle(train_data, train_label)
-
-    val_root = "/srv/node/sdc1/Val_AFEW/"
+    # ind = [i for i in range(train_data.shape[0])]
+    data_set = shuffle(train_data, train_label)
+    train_data = data_set[0]
+    train_label = data_set[1]
+    val_root = "/Users/wangxu/Desktop/Val_AFEW/"
     # emotions = ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
     # emotion_labels = np.identity(7)
     # for emotion in emotions:
@@ -174,7 +173,11 @@ if __name__ == '__main__':
     # train_data = (train_data - min_val) / (max_val - min_val)
     val_data = (val_data - min_val) / (max_val - min_val)
 
-    build_model(train_data, train_label, val_data, val_label)
+    # build_model(train_data, train_label, val_data, val_label)
+    np.save('AFEW_train_input.npz', train_data)
+    np.save('AFEW_train_output.npz', train_label)
+    np.save('AFEW_test_input.npz', val_data)
+    np.save('AFEW_test_output.npz', val_label)
 
 
 
