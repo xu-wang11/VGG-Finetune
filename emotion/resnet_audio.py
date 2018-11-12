@@ -17,7 +17,7 @@ tf.reset_default_graph()
 
 
 class ResNet:
-    def __init__(self, model_path=[], dropout=False):
+    def __init__(self, model_path=None, dropout=False):
         tf.reset_default_graph()
         self.training = tf.placeholder(tf.bool, name='training')
         self.batch_size = 128
@@ -136,7 +136,7 @@ class ResNet:
     def save_weight(self, save_path):
         self.weight_dict=self.fetch_weight()
         filehandler = open(save_path, 'wb')
-        pickle.dump(self.weight_dict,filehandler)
+        pickle.dump(self.weight_dict, filehandler)
         filehandler.close()
 
     def inference(self):
@@ -407,22 +407,34 @@ class ResNet:
 if __name__ == '__main__':
     input = np.load('../data/RML/rml_audio_feature.npy')
     output = np.load('../data/RML/rml_label.npy')
-    min_val = np.min(input)
-    max_val = np.max(input)
-    input = (input - min_val) / (max_val - min_val)
-    # ind = [i for i in range(input.shape[0])]
-    data_set = shuffle(input, output)
-    train_len = int(data_set[0].shape[0] * 0.7)
-    train_data = data_set[0][0:train_len]
-    train_label = data_set[1][0:train_len]
-    val_data = data_set[0][train_len:]
-    val_label = data_set[1][train_len:]
+    # min_val = np.min(input)
+    # max_val = np.max(input)
+    # input = (input - min_val) / (max_val - min_val)
+    # # ind = [i for i in range(input.shape[0])]
+    # data_set = shuffle(input, output)
+    # train_len = int(data_set[0].shape[0] * 0.7)
+    # train_data = data_set[0][0:train_len]
+    # train_label = data_set[1][0:train_len]
+    # val_data = data_set[0][train_len:]
+    # val_label = data_set[1][train_len:]
+    train_input = np.load('../data/RML/rml_train_input.npy')
+    train_output = np.load('../data/RML/rml_train_output.npy')
+
+    test_input = np.load('../data/RML/rml_test_input.npy')
+    test_output = np.load('../data/RML/rml_test_output.npy')
+
+    min_val = np.min(train_input)
+    max_val = np.min(train_input)
+
+    train_input = (train_input - min_val) / (max_val - min_val)
+    test_input = (test_input - min_val) / (max_val - min_val)
 
     resnet = ResNet()
     resnet.build()
 
-    resnet.train(80, train_data, train_label, val_data, val_label, lr=0.1)
+    resnet.train(80, train_input, train_output, test_input, test_output, lr=0.1)
 
-    # resnet.train(n_epochs=20, lr=0.01)
+    resnet.train(n_epochs=20, lr=0.01)
 
-    # resnet.train(n_epochs=20, lr=0.001)
+    resnet.train(n_epochs=20, lr=0.001)
+    # resnet.save_weight('../data/RML/learn_rate_01.bin')
