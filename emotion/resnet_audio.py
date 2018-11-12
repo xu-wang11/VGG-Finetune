@@ -334,10 +334,6 @@ class ResNet:
                 total_loss += l
                 n_batches += 1
 
-                if n_batches % 5 ==0:
-                            print('\repoch={:d},batch={:d}/{:d},curr_loss={:f},used_time:{:.2f}s'.format(epoch+1,n_batches,self.total_batches_train,total_loss/n_batches,time.time()-time_last),end=' ')
-                            time_last=time.time()
-
         except tf.errors.OutOfRangeError:
             pass
 #        print('Average loss at epoch {0}: {1}'.format(epoch, total_loss / n_batches))
@@ -366,7 +362,7 @@ class ResNet:
         except tf.errors.OutOfRangeError:
             pass
 
-        print('\nEpoch:{:d}, val_acc={:%}, val_loss={:f}'.format(epoch+1, total_correct_preds / self.n_samples_val, total_loss / n_batches))
+        print('\nEpoch:{:d}, val_acc={:%}, val_loss={:f}'.format(epoch+1, total_correct_preds / train_data.shape[0], total_loss / n_batches))
 #        print('Val loss at epoch {:d}: {:f}'.format(epoch, total_loss / n_batches))
 #        print('Accuracy at epoch {:d}: {:%} '.format(epoch, total_correct_preds / self.n_samples_val))
 #        print('Took: {0} seconds'.format(time.time() - start_time))
