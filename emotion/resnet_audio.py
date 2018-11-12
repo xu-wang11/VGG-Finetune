@@ -22,7 +22,7 @@ class ResNet:
         self.training = tf.placeholder(tf.bool, name='training')
         self.batch_size = 128
         self.cpu_cores = 8
-        self.n_classes = 6
+        self.n_classes = 7
         self.model_path = model_path
 
         self.regularizer_conv = tf.contrib.layers.l2_regularizer(scale=0.0001)
@@ -141,7 +141,7 @@ class ResNet:
 
     def inference(self):
         self.X = tf.placeholder(tf.float32, shape=[None, 64, 64, 1], name='X')
-        self.Y = tf.placeholder(tf.float32, shape=[None, 6], name='Y')
+        self.Y = tf.placeholder(tf.float32, shape=[None, 7], name='Y')
 
         # model definition
         self.layer_input['pre_conv'] = self.X
@@ -417,22 +417,41 @@ if __name__ == '__main__':
     # train_label = data_set[1][0:train_len]
     # val_data = data_set[0][train_len:]
     # val_label = data_set[1][train_len:]
-    train_input = np.load('../data/RML/rml_train_input.npy')
-    train_output = np.load('../data/RML/rml_train_output.npy')
 
-    test_input = np.load('../data/RML/rml_test_input.npy')
-    test_output = np.load('../data/RML/rml_test_output.npy')
+    ## train_input = np.load('../data/RML/rml_train_input4.npy')
+    ## train_label = np.load('../data/RML/rml_train_output4.npy')
+    ## data_set = shuffle(train_input, train_label)
+    ## train_input = data_set[0]
+    ## train_label = data_set[1]
+
+    ## val_input = np.load('../data/RML/rml_test_input4.npy')
+    ## val_label = np.load('../data/RML/rml_test_output4.npy')
+
+    ## min_val = np.min(train_input)
+    ## max_val = np.max(train_input)
+
+    ## train_data = (train_input - min_val) / (max_val - min_val)
+    ## val_data = (val_input - min_val) / (max_val - min_val)
+
+
+    train_input = np.load('../data/AFEW/AFEW_train_input.npy')
+    train_label = np.load('../data/AFEW/AFEW_train_output.npy')
+    data_set = shuffle(train_input, train_label)
+    train_input = data_set[0]
+    train_label = data_set[1]
+
+    val_input = np.load('../data/AFEW/AFEW_test_input.npy')
+    val_label = np.load('../data/AFEW/AFEW_test_output.npy')
 
     min_val = np.min(train_input)
     max_val = np.max(train_input)
 
-    train_input = (train_input - min_val) / (max_val - min_val)
-    test_input = (test_input - min_val) / (max_val - min_val)
-
+    train_data = (train_input - min_val) / (max_val - min_val)
+    val_data = (val_input - min_val) / (max_val - min_val)
     resnet = ResNet()
     resnet.build()
 
-    resnet.train(80, train_input, train_output, test_input, test_output, lr=0.1)
+    resnet.train(150, train_data, train_label, val_data, val_label, lr=0.1)
 
     resnet.train(20, train_data, train_label, val_data, val_label, lr=0.01)
 

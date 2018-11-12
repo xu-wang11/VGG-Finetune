@@ -180,8 +180,8 @@ if __name__ == '__main__':
 
     # train_data, train_label, val_data, val_label = vgg.audio_dataset()
 
-    input = np.load('rml_audio_feature.npy')
-    output = np.load('rml_label.npy')
+    input = np.load('data/RML/rml_audio_feature.npy')
+    output = np.load('data/RML/rml_label.npy')
     min_val = np.min(input)
     max_val = np.max(input)
     input = (input - min_val) / (max_val - min_val)
