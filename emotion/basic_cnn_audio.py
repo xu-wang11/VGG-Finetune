@@ -78,9 +78,9 @@ def build_model(train_data, label_data, val_data, val_label):
                 X_batch = train_data[iteration * batch_size:iteration * batch_size + batch_size, :, :]
                 y_batch = label_data[iteration * batch_size:iteration * batch_size + batch_size]
                 sess.run(op_opt, feed_dict={x: X_batch, y: y_batch})
-            for iteration in range(test_data.shape[0] // batch_size):
-                X_batch = test_data[iteration * batch_size:iteration * batch_size + batch_size, :, :]
-                y_batch = test_label[iteration * batch_size:iteration * batch_size + batch_size]
+            for iteration in range(val_data.shape[0] // batch_size):
+                X_batch = val_data[iteration * batch_size:iteration * batch_size + batch_size, :, :]
+                y_batch = val_label[iteration * batch_size:iteration * batch_size + batch_size]
 
                 n = sess.run(correct_prediction, feed_dict={x: X_batch, y: y_batch})
                 true_num += np.sum(n)
