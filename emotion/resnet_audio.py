@@ -358,7 +358,7 @@ class ResNet:
                 writer.add_summary(summaries, global_step=step)
                 total_loss += loss_batch
                 total_correct_preds += accuracy_batch
-                print(accuracy_batch)
+                # print(accuracy_batch)
                 n_batches += 1
         except tf.errors.OutOfRangeError:
             pass
@@ -423,6 +423,6 @@ if __name__ == '__main__':
 
     resnet.train(80, train_data, train_label, val_data, val_label, lr=0.1)
 
-    # resnet.train(n_epochs=20, lr=0.01)
+    resnet.train(20, train_data, train_label, val_data, val_label, lr=0.01)
 
-    # resnet.train(n_epochs=20, lr=0.001)
+    resnet.train(20, train_data, train_label, val_data, val_label,  lr=0.001)
