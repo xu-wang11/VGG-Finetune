@@ -89,16 +89,31 @@ def build_model(train_data, label_data, val_data, val_label):
 
 
 if __name__ == '__main__':
-    input = np.load('../data/RML/rml_audio_feature.npy')
-    output = np.load('../data/RML/rml_label.npy')
-    min_val = np.min(input)
-    max_val = np.max(input)
-    input = (input - min_val) / (max_val - min_val)
-    # ind = [i for i in range(input.shape[0])]
-    data_set = shuffle(input, output)
-    train_len = int(data_set[0].shape[0] * 0.7)
-    train_data = data_set[0][0:train_len]
-    train_label = data_set[1][0:train_len]
-    test_data = data_set[0][train_len:]
-    test_label = data_set[1][train_len:]
-    build_model(train_data, train_label, test_data, test_label)
+    # input = np.load('../data/RML/rml_audio_feature.npy')
+    # output = np.load('../data/RML/rml_label.npy')
+    # min_val = np.min(input)
+    # max_val = np.max(input)
+    # input = (input - min_val) / (max_val - min_val)
+    # # ind = [i for i in range(input.shape[0])]
+    # data_set = shuffle(input, output)
+    # train_len = int(data_set[0].shape[0] * 0.7)
+    # train_data = data_set[0][0:train_len]
+    # train_label = data_set[1][0:train_len]
+    # test_data = data_set[0][train_len:]
+    # test_label = data_set[1][train_len:]
+
+    train_input = np.load('../data/RML/rml_train_input.npy')
+    train_label = np.load('../data/RML/rml_train_output.npy')
+    data_set = shuffle(train_input, train_label)
+    train_input = data_set[0]
+    train_label = data_set[1]
+
+    val_input = np.load('../data/RML/rml_test_input.npy')
+    val_label = np.load('../data/RML/rml_test_output.npy')
+
+    min_val = np.min(train_input)
+    max_val = np.max(train_input)
+
+    train_data = (train_input - min_val) / (max_val - min_val)
+    val_data = (val_input - min_val) / (max_val - min_val)
+    build_model(train_data, train_label, val_data, val_label)
