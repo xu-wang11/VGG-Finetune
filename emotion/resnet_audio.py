@@ -424,7 +424,7 @@ if __name__ == '__main__':
     test_output = np.load('../data/RML/rml_test_output.npy')
 
     min_val = np.min(train_input)
-    max_val = np.min(train_input)
+    max_val = np.max(train_input)
 
     train_input = (train_input - min_val) / (max_val - min_val)
     test_input = (test_input - min_val) / (max_val - min_val)
